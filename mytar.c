@@ -14,6 +14,7 @@
 typedef struct Options {
     char specified;
     char *archivefile;
+    char isThereF;
 } options;
 
 int main( int argc, char *argv[] )
@@ -33,6 +34,11 @@ int main( int argc, char *argv[] )
                 fprintf(stderr, "Error: Multiple modes specified.\n");
                 exit(-1);
             }
+
+            if(strlen(capture.isThereF) == 0){
+                fprintf(stderr, "Error: No tarfile specified.\n");
+                exit(-1);
+                }
             
             printf("Creates an archive of the given directory tree. A directory name must be specified.");
 
@@ -50,6 +56,11 @@ int main( int argc, char *argv[] )
                 exit(-1);
             }
 
+            if(strlen(capture.isThereF) == 0){
+                fprintf(stderr, "Error: No tarfile specified.\n");
+                exit(-1);
+                }
+
             printf("Extracts the directory tree contained in the specified archive");
 
             capture.specified = 'x';
@@ -65,6 +76,11 @@ int main( int argc, char *argv[] )
                 exit(-1);
             }
 
+            if(strlen(capture.isThereF) == 0){
+                fprintf(stderr, "Error: No tarfile specified.\n");
+                exit(-1);
+                }
+
             printf("Prints the contents of the specified archive");
 
             capture.specified = 't';
@@ -75,20 +91,20 @@ int main( int argc, char *argv[] )
             case 'f':
             target = optarg;
 
-            if(capture.specified) //meaning if capture.transformation != 0
-            {
-                fprintf(stderr, "Error: Multiple modes specified\n");
-                exit(-1);
-            }
+            // if(capture.specified) //meaning if capture.transformation != 0
+            // {
+            //     fprintf(stderr, "Error: Multiple modes specified\n");
+            //     exit(-1);
+            // }
 
-            capture.specified = 'f';
+            capture.isThereF = 'f';
             capture.archivefile = optarg;
             //printf("%s\n", capture.transformationValue);
             //printf("%c\n", capture.transformation);
 
             if(strlen(target) == 0){
                 fprintf(stderr, "Error: No tarfile specified.\n");
-                exit(1);
+                exit(-1);
             }
             //printf("Option g, converting to a PGM. Arg = %s\n", optarg);
             break;
@@ -96,6 +112,10 @@ int main( int argc, char *argv[] )
       
             default:
                 //For now
+                if(strlen(capture.isThereF) == 0){
+                fprintf(stderr, "Error: No tarfile specified.\n");
+                exit(-1);
+                }
                 fprintf(stderr, "Error: No mode specified.\n");
                 exit(-1);
                 //printf("Unexpected option\n"); Take out comments later
