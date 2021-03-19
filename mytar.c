@@ -15,13 +15,14 @@ typedef struct Options {
     char specified;
     char *archivefile;
     char isThereF;
+    char *directory;
 } options;
 
 int main( int argc, char *argv[] )
 {
     int option;
     //char *endPointer;
-    long target;
+    char* target;
 
     options capture;
 
@@ -35,12 +36,15 @@ int main( int argc, char *argv[] )
                 exit(-1);
             }
 
-            if(strlen(capture.isThereF) == 0){
-                fprintf(stderr, "Error: No tarfile specified.\n");
+            if((argc != optind && (strcmp(argv[optind], "-f") != 0))){
+            capture.directory = argv[optind];
+
+            } else {
+                fprintf(stderr, "Error: No directory target specified.\n");
                 exit(-1);
-                }
+            }
             
-            printf("Creates an archive of the given directory tree. A directory name must be specified.");
+            printf("Creates an archive of the given directory tree. A directory name must be specified.\n");
 
             capture.specified = 'c';
             printf("%c\n", capture.specified);
@@ -56,12 +60,8 @@ int main( int argc, char *argv[] )
                 exit(-1);
             }
 
-            if(strlen(capture.isThereF) == 0){
-                fprintf(stderr, "Error: No tarfile specified.\n");
-                exit(-1);
-                }
 
-            printf("Extracts the directory tree contained in the specified archive");
+            printf("Extracts the directory tree contained in the specified archive\n");
 
             capture.specified = 'x';
             printf("%c\n", capture.specified);
@@ -76,12 +76,7 @@ int main( int argc, char *argv[] )
                 exit(-1);
             }
 
-            if(strlen(capture.isThereF) == 0){
-                fprintf(stderr, "Error: No tarfile specified.\n");
-                exit(-1);
-                }
-
-            printf("Prints the contents of the specified archive");
+            printf("Prints the contents of the specified archive\n");
 
             capture.specified = 't';
             printf("%c\n", capture.specified);
@@ -102,7 +97,7 @@ int main( int argc, char *argv[] )
             //printf("%s\n", capture.transformationValue);
             //printf("%c\n", capture.transformation);
 
-            if(strlen(target) == 0){
+            if(strlen(capture.archivefile) == 0){
                 fprintf(stderr, "Error: No tarfile specified.\n");
                 exit(-1);
             }
@@ -112,7 +107,7 @@ int main( int argc, char *argv[] )
       
             default:
                 //For now
-                if(strlen(capture.isThereF) == 0){
+                if(strlen(&capture.isThereF) == 0){
                 fprintf(stderr, "Error: No tarfile specified.\n");
                 exit(-1);
                 }
@@ -121,5 +116,11 @@ int main( int argc, char *argv[] )
                 //printf("Unexpected option\n"); Take out comments later
             break;
         }
+        
+        // if(strlen(&capture.isThereF) == 0){
+        //         fprintf(stderr, "Error: No tarfile specified.\n");
+        //         exit(-1);
+        // }
         // If a library/system call fails, mytarcallsperror()with the name of the failedroutinethen exits.
     }
+}
