@@ -31,7 +31,7 @@ int main( int argc, char *argv[] )
             if(capture.specified) //meaning if capture.transformation != 0
             {
                 fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(1);
+                exit(-1);
             }
             
             printf("Creates an archive of the given directory tree. A directory name must be specified.");
@@ -47,7 +47,7 @@ int main( int argc, char *argv[] )
             if(capture.specified) //meaning if capture.transformation != 0
             {
                 fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(1);
+                exit(-1);
             }
 
             printf("Extracts the directory tree contained in the specified archive");
@@ -62,7 +62,7 @@ int main( int argc, char *argv[] )
             if(capture.specified) //meaning if capture.transformation != 0
             {
                 fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(1);
+                exit(-1);
             }
 
             printf("Prints the contents of the specified archive");
@@ -78,7 +78,7 @@ int main( int argc, char *argv[] )
             if(capture.specified) //meaning if capture.transformation != 0
             {
                 fprintf(stderr, "Error: Multiple modes specified\n");
-                exit(1);
+                exit(-1);
             }
 
             capture.specified = 'f';
@@ -97,7 +97,7 @@ int main( int argc, char *argv[] )
             default:
                 //For now
                 fprintf(stderr, "Error: No mode specified.\n");
-                exit(1);
+                exit(-1);
                 //printf("Unexpected option\n"); Take out comments later
             break;
         }
