@@ -8,13 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 
 typedef struct Options {
-    char transformation;
-    char *transformationValue;
-    char *inputFile;
-    char *outputFile;
+    char specified;
+    char *archivefile;
 } options;
 
 int main( int argc, char *argv[] )
@@ -24,44 +23,83 @@ int main( int argc, char *argv[] )
     long target;
 
     options capture;
-    // capture.transformation = 0;
-    // capture.transformationValue = NULL;
-    // capture.outputFile = NULL;
 
     while((option = getopt(argc, argv, "cxtf:]")) != -1) {
         switch(option) {
             case 'c':
-            //capture = (options){.transformation = 'b', .transformationValue = optarg, .inputFile = "foo.pbm", .outputFile = "foo.ppm"};
 
-            if(capture.transformation) //meaning if capture.transformation != 0
+            if(capture.specified) //meaning if capture.transformation != 0
             {
-                fprintf(stderr, "Error: Multiple transformations specified\n");
+                fprintf(stderr, "Error: Multiple modes specified.\n");
                 exit(1);
             }
+            
+            printf("Creates an archive of the given directory tree. A directory name must be specified.");
 
-            capture.transformation = 'b';
-            //capture.transformationValue = optarg;
-            //printf("%s\n", capture.transformationValue);
-            printf("%c\n", capture.transformation);
+            capture.specified = 'c';
+            printf("%c\n", capture.specified);
 
             //printf("Option b, converting to PBM.\n");
             break;
 
-            case 'g':
-            target = strtol(optarg, NULL, 10);
+            case 'x':
 
-            if(capture.transformation) //meaning if capture.transformation != 0
+            if(capture.specified) //meaning if capture.transformation != 0
             {
-                fprintf(stderr, "Error: Multiple transformations specified\n");
+                fprintf(stderr, "Error: Multiple modes specified.\n");
                 exit(1);
             }
+
+            printf("Extracts the directory tree contained in the specified archive");
+
+            capture.specified = 'x';
+            printf("%c\n", capture.specified);
+
+            break;
+
+            case 't':
+
+            if(capture.specified) //meaning if capture.transformation != 0
+            {
+                fprintf(stderr, "Error: Multiple modes specified.\n");
+                exit(1);
+            }
+
+            printf("Prints the contents of the specified archive");
+
+            capture.specified = 't';
+            printf("%c\n", capture.specified);
+
+            break;
+
+            case 'f':
+            target = optarg;
+
+            if(capture.specified) //meaning if capture.transformation != 0
+            {
+                fprintf(stderr, "Error: Multiple modes specified\n");
+                exit(1);
+            }
+
+            capture.specified = 'f';
+            capture.archivefile = optarg;
+            //printf("%s\n", capture.transformationValue);
+            //printf("%c\n", capture.transformation);
+
+            if(strlen(target) == 0){
+                fprintf(stderr, "Error: No tarfile specified.\n");
+                exit(1);
+            }
+            //printf("Option g, converting to a PGM. Arg = %s\n", optarg);
+            break;
 
       
             default:
                 //For now
-                fprintf(stderr, "Usage: ppmcvt [-bgirsmtno] [FILE]\n");
+                fprintf(stderr, "Error: No mode specified.\n");
                 exit(1);
                 //printf("Unexpected option\n"); Take out comments later
             break;
         }
+        // If a library/system call fails, mytarcallsperror()with the name of the failedroutinethen exits.
     }
