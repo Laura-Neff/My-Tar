@@ -224,13 +224,13 @@ int main( int argc, char *argv[] )
             fprintf(stderr,"Error: %s: %s\n",de->d_name, strerror(errno));
             exit(-1);
             } else if (S_ISDIR(buf.st_mode)) {
-                printf("%10lld %s/\n", buf.st_size, de->d_name);
+                printf("%10lld %s/\n", (long long int) buf.st_size, de->d_name);
             } else if (S_ISLNK(buf.st_mode)) {
-                printf("%10lld %s@\n", buf.st_size, de->d_name);
+                printf("%10lld %s@\n", (long long int) buf.st_size, de->d_name);
             } else if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-                printf("%10lld %s*\n", buf.st_size, de->d_name);
+                printf("%10lld %s*\n", (long long int) buf.st_size, de->d_name);
             } else {
-            printf("%10lld %s\n", buf.st_size, de->d_name); //Access fields in buf to print out size and name in each file
+            printf("%10lld %s\n", (long long int) buf.st_size, de->d_name); //Access fields in buf to print out size and name in each file
             total_size += buf.st_size;
             }
         }
