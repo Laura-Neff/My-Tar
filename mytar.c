@@ -15,6 +15,27 @@ directory *directories = 0;
 file *files = 0;
 hlink *hlinks = 0;
 
+/*Step 1)
+    - Go through the directory specified and find all files, directories, and links inside of it.
+    - Understand relative paths, modes, modified times, inodes, etc.
+
+Step 2)
+    - Fill appropriate structs with data from directories, files, and links scanned in step 1
+    - Store everything in their appropriate linked lists
+
+Step 3) 
+    - Write directories, files, and links to a tar file in the appropriate format 
+
+Step 4) 
+    - Write a method that does steps 1-2, but starting from a tar file
+
+Step 5)
+    - For extracting from tar, write methods to write everything in the linked lists back to disk
+
+
+*/
+
+
 
 typedef struct Options {
     char specified;
