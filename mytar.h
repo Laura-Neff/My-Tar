@@ -31,5 +31,5 @@ typedef struct Hard_Links {
     char *name;
     u_int16_t mode;
     u_int32_t modification_time;
-} hlinks;
+} hlink;
 
