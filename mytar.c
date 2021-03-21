@@ -25,102 +25,109 @@ int main( int argc, char *argv[] )
     char* target;
 
     options capture;
+    capture.directory = "";
+    capture.archivefile = "";
 
     while((option = getopt(argc, argv, "cxtf:]")) != -1) {
         switch(option) {
             case 'c':
 
-            if(capture.specified) //meaning if capture.transformation != 0
-            {
-                fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(-1);
-            }
+                if(capture.specified) //meaning if capture.transformation != 0
+                {
+                    fprintf(stderr, "Error: Multiple modes specified.\n");
+                    exit(-1);
+                }
+                
+                printf("Creates an archive of the given directory tree. A directory name must be specified.\n");
 
-            if((argc != optind && (strcmp(argv[optind], "-f") != 0))){
-            capture.directory = argv[optind];
+                capture.specified = 'c';
+                printf("%c\n", capture.specified);
 
-            } else {
-                fprintf(stderr, "Error: No directory target specified.\n");
-                exit(-1);
-            }
-            
-            printf("Creates an archive of the given directory tree. A directory name must be specified.\n");
-
-            capture.specified = 'c';
-            printf("%c\n", capture.specified);
-
-            //printf("Option b, converting to PBM.\n");
-            break;
+                //printf("Option b, converting to PBM.\n");
+                break;
 
             case 'x':
 
-            if(capture.specified) //meaning if capture.transformation != 0
-            {
-                fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(-1);
-            }
+                if(capture.specified) //meaning if capture.transformation != 0
+                {
+                    fprintf(stderr, "Error: Multiple modes specified.\n");
+                    exit(-1);
+                }
 
 
-            printf("Extracts the directory tree contained in the specified archive\n");
+                printf("Extracts the directory tree contained in the specified archive\n");
 
-            capture.specified = 'x';
-            printf("%c\n", capture.specified);
+                capture.specified = 'x';
+                printf("%c\n", capture.specified);
 
-            break;
+                break;
 
             case 't':
 
-            if(capture.specified) //meaning if capture.transformation != 0
-            {
-                fprintf(stderr, "Error: Multiple modes specified.\n");
-                exit(-1);
-            }
+                if(capture.specified) //meaning if capture.transformation != 0
+                {
+                    fprintf(stderr, "Error: Multiple modes specified.\n");
+                    exit(-1);
+                }
 
-            printf("Prints the contents of the specified archive\n");
+                printf("Prints the contents of the specified archive\n");
 
-            capture.specified = 't';
-            printf("%c\n", capture.specified);
+                capture.specified = 't';
+                printf("%c\n", capture.specified);
 
-            break;
+                break;
 
             case 'f':
-            target = optarg;
+                target = optarg;
 
-            // if(capture.specified) //meaning if capture.transformation != 0
-            // {
-            //     fprintf(stderr, "Error: Multiple modes specified\n");
-            //     exit(-1);
-            // }
+                // if(capture.specified) //meaning if capture.transformation != 0
+                // {
+                //     fprintf(stderr, "Error: Multiple modes specified\n");
+                //     exit(-1);
+                // }
 
-            capture.isThereF = 'f';
-            capture.archivefile = optarg;
-            //printf("%s\n", capture.transformationValue);
-            //printf("%c\n", capture.transformation);
+                capture.isThereF = 'f';
+                capture.archivefile = optarg;
+                //printf("%s\n", capture.transformationValue);
+                //printf("%c\n", capture.transformation);
 
-            if(strlen(capture.archivefile) == 0){
-                fprintf(stderr, "Error: No tarfile specified.\n");
-                exit(-1);
-            }
-            //printf("Option g, converting to a PGM. Arg = %s\n", optarg);
-            break;
+                if(strlen(capture.archivefile) == 0){
+                    fprintf(stderr, "Error: No tarfile specified.\n");
+                    exit(-1);
+                }
+                //printf("Option g, converting to a PGM. Arg = %s\n", optarg);
+                break;
 
       
-            default:
-                //For now
-                if(strlen(&capture.isThereF) == 0){
-                fprintf(stderr, "Error: No tarfile specified.\n");
-                exit(-1);
-                }
-                fprintf(stderr, "Error: No mode specified.\n");
-                exit(-1);
-                //printf("Unexpected option\n"); Take out comments later
-            break;
+            // default:
+            //     //For now
+            //     if(strlen(&capture.isThereF) == 0){
+            //     fprintf(stderr, "Error: No tarfile specified.\n");
+            //     exit(-1);
+            //     }
+            //     fprintf(stderr, "Error: No mode specified.\n");
+            //     exit(-1);
+            //     //printf("Unexpected option\n"); Take out comments later
+            // break;
         }
         
-        // if(strlen(&capture.isThereF) == 0){
-        //         fprintf(stderr, "Error: No tarfile specified.\n");
-        //         exit(-1);
-        // }
-        // If a library/system call fails, mytarcallsperror()with the name of the failedroutinethen exits.
+    }
+
+     if(argc != optind){
+         capture.directory = argv[optind];
+
+      }
+      if ((strlen(capture.directory) == 0) && (capture.specified == 'c')) {
+        fprintf(stderr, "Error: No directory target specified.\n");
+        exit(-1);
+     }
+
+    if(strlen(&capture.isThereF) == 0){
+        fprintf(stderr, "Error: No tarfile specified.\n");
+        exit(-1);
+
+    } else if (!capture.specified) {
+        fprintf(stderr, "Error: No mode specified.\n");
+        exit(-1);
     }
 }
