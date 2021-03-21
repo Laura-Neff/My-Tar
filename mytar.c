@@ -195,6 +195,8 @@ int main( int argc, char *argv[] )
 
             //Print size and name of each file in directory
 
+            //This is based on Dr. Arnold's classnotes
+
             for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
                 exists = stat(de->d_name, &buf); //Call stat on directory name and upload inode info into stat buf structure
                 if(exists < 0){
