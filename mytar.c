@@ -50,6 +50,69 @@ typedef struct Options {
     char *directory;
 } options;
 
+int get_size(const char *directory_name){
+
+        struct stat buf;
+        int exists = 0;
+        int total_size = 0;
+        DIR *d;
+        struct dirent *de;
+        char *fullname;
+    
+          
+        exists = lstat(directory_name,&buf);
+        if (exists < 0){
+            fprintf(stderr, "Error: Specified target (\"%s\") does not exist.\n", directory_name);
+            exit(-1);
+        }
+        d = opendir(directory_name); //Directory pointer
+        if(d == NULL){
+            fprintf(stderr, "Error: Specified target (\"%s\") is not a directory.\n", directory_name);
+            exit(-1);
+        }
+
+                    //Print size and name of each file in directory
+
+                    //This is based on Dr. Arnold's classnotes
+        
+
+        for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
+            char current_file[255];
+            strcpy(current_file, directory_name);
+            strcat(current_file,"/");
+            strcat(current_file,de->d_name);
+            exists = lstat(current_file, &buf); //Call stat on directory name and upload inode info into stat buf structure
+            if(exists < 0){
+            fprintf(stderr,"Error: %s: %s\n",current_file, strerror(errno));
+            exit(-1);
+            } else if (S_ISDIR(buf.st_mode)) {
+                printf("%10lld %s/\n", (long long int) buf.st_size, current_file);
+                if (strcmp(de->d_name,"..")!=0 && strcmp(de->d_name,".")!=0){
+                    total_size += get_size(current_file);
+                }
+            } else if (S_ISLNK(buf.st_mode)) {
+                printf("%10lld %s@\n", (long long int) buf.st_size, current_file);
+            } else if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+                printf("%10lld %s*\n", (long long int) buf.st_size, current_file);
+                total_size += buf.st_size;
+            } else {
+                printf("%10lld %s\n", (long long int) buf.st_size, current_file); //Access fields in buf to print out size and name in each file
+                total_size += buf.st_size;
+            }
+        }
+        //printf("%10d total\n", total_size);
+        closedir(d);
+
+        return total_size;
+
+
+
+
+
+
+
+} //end get_size
+
 int main( int argc, char *argv[] )
 {
     
@@ -187,63 +250,8 @@ int main( int argc, char *argv[] )
 
 
 
-     }
+     } //end switch
 
 
 
-    }
-
-    int get_size(const char *directory_name){
-
-        struct stat buf;
-        int exists = 0;
-        int total_size = 0;
-        DIR *d;
-        struct dirent *de;
-        char *fullname;
-    
-          
-        exists = stat(directory_name,&buf);
-        if (exists < 0){
-            fprintf(stderr, "Error: Specified target (\"%s\") does not exist.\n", directory_name);
-            exit(-1);
-        }
-        d = opendir(directory_name); //Directory pointer
-        if(d == NULL){
-            fprintf(stderr, "Error: Specified target (\"%s\") is not a directory.\n", directory_name);
-            exit(-1);
-        }
-
-                    //Print size and name of each file in directory
-
-                    //This is based on Dr. Arnold's classnotes
-
-        for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
-            exists = lstat(de->d_name, &buf); //Call stat on directory name and upload inode info into stat buf structure
-            if(exists < 0){
-            fprintf(stderr,"Error: %s: %s\n",de->d_name, strerror(errno));
-            exit(-1);
-            } else if (S_ISDIR(buf.st_mode)) {
-                printf("%10lld %s/\n", (long long int) buf.st_size, de->d_name);
-            } else if (S_ISLNK(buf.st_mode)) {
-                printf("%10lld %s@\n", (long long int) buf.st_size, de->d_name);
-            } else if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-                printf("%10lld %s*\n", (long long int) buf.st_size, de->d_name);
-            } else {
-            printf("%10lld %s\n", (long long int) buf.st_size, de->d_name); //Access fields in buf to print out size and name in each file
-            total_size += buf.st_size;
-            }
-        }
-        //printf("%10d total\n", total_size);
-        closedir(d);
-
-        return total_size;
-
-
-
-
-
-
-
-    }
-
+} //end main
