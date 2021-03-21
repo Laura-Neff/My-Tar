@@ -5,16 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Build and debug active file",
+            "name": "(gdb/Linux) Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/Users/LauraNeff/Desktop/My-Tar/mytar",
-            "args": ["-c","-f", "a.tar","~/Desktop"],
+            "program": "${workspaceFolder}/mytar",
+            "args": ["-c","-f", "a.tar","."],
             "stopAtEntry": false,
-            "cwd": "/Users/LauraNeff/Desktop/My-Tar/",
+            "cwd": "${workspaceFolder}/",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
+            "MIMode": "gdb",
             "preLaunchTask": "C/C++: gcc build active file"
         }
     ]
