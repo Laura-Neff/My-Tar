@@ -10,6 +10,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "mytar.h"
+
+directory *directories;
+file *files;
+hlink *hlinks;
+
 
 typedef struct Options {
     char specified;
