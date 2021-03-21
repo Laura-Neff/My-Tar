@@ -9,12 +9,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-
 #include "mytar.h"
 
-directory *directories;
-file *files;
-hlink *hlinks;
+directory *directories = 0;
+file *files = 0;
+hlink *hlinks = 0;
 
 
 typedef struct Options {
