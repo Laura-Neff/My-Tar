@@ -11,9 +11,25 @@ typedef struct File {
     u_int32_t inode_number;
     u_int16_t name_length;
     char *name;
-    u_int16_t file_mode;
-    u_int32_t modification_time
-    u_int32_t size
+    u_int16_t mode;
+    u_int32_t modification_time;
+    u_int32_t size;
     char *content;
-} file
+} file;
+
+typedef struct Directory {
+    u_int32_t inode_number;
+    u_int16_t name_length;
+    char *name;
+    u_int16_t mode;
+    u_int32_t modification_time;
+} directory;
+
+typedef struct Hard_Links {
+    u_int32_t inode_number;
+    u_int16_t name_length;
+    char *name;
+    u_int16_t mode;
+    u_int32_t modification_time;
+} hlinks;
 
