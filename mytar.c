@@ -13,6 +13,9 @@
 #include "mytar.h"
 #include <dirent.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 
 /*Step 1)
@@ -36,6 +39,9 @@ Step 5)
 */
 
 
+// This has been inspired by Dr. Arnold's classnotes //
+
+
 
 typedef struct Options {
     char specified;
@@ -52,6 +58,12 @@ int main( int argc, char *argv[] )
     file *files = 0;
     hlink *hlinks = 0;
 
+    struct stat buf;
+    int exists = 0;
+    int total_size = 0;
+    DIR *d;
+    struct dirent *de;
+
 
     int option;
     //char *endPointer;
@@ -60,12 +72,15 @@ int main( int argc, char *argv[] )
     options capture;
     capture.directory = "";
     capture.archivefile = "";
+    capture.specified = 0;
+    capture.isThereF = 0;
+
 
     while((option = getopt(argc, argv, "cxtf:]")) != -1) {
         switch(option) {
             case 'c':
 
-                if(capture.specified) //meaning if capture.transformation != 0
+                if(capture.specified) //meaning if capture.specified != 0
                 {
                     fprintf(stderr, "Error: Multiple modes specified.\n");
                     exit(-1);
@@ -129,6 +144,7 @@ int main( int argc, char *argv[] )
                     exit(-1);
                 }
                 //printf("Option g, converting to a PGM. Arg = %s\n", optarg);
+
                 break;
 
       
@@ -164,14 +180,46 @@ int main( int argc, char *argv[] )
         exit(-1);
     }
 
-
     switch(capture.specified) {
         case 'c':
-            opendir(capture.directory);
-            readdir(capture.directory);
+            exists = stat(capture.directory,&buf);
+            if (exists < 0){
+                fprintf(stderr, "Error: Specified target (\"%s\") does not exist.\n", capture.directory);
+                exit(-1);
+            }
+            d = opendir(capture.directory); //Directory pointer
+            if(d == NULL){
+                fprintf(stderr, "Error: Specified target (\"%s\") is not a directory.\n", capture.directory);
+                exit(-1);
+            }
+
+            //Print size and name of each file in directory
+
+            for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
+                exists = stat(de->d_name, &buf); //Call stat on directory name and upload inode info into stat buf structure
+                if(exists < 0){
+                    fprintf(stderr,"Error: %s: %s\n",de->d_name, strerror(errno));
+                    exit(-1);
+                } else {
+                    printf("%10lld %s\n", buf.st_size, de->d_name); //Access fields in buf to print out size and name in each file
+                    total_size += buf.st_size;
+                }
+            }
+            printf("%10d total\n", total_size);
+            closedir(d);
+
+
+
+
+            }
+
+
+
+
+            // readdir(capture.directory);
+            // close(capture.directory);
 
 
 
     }
 
-}
