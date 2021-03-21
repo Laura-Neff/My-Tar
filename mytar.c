@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "mytar.h"
 
-directory *directories = 0;
-file *files = 0;
-hlink *hlinks = 0;
+#include "mytar.h"
+#include <dirent.h>
+
+
 
 /*Step 1)
     - Go through the directory specified and find all files, directories, and links inside of it.
@@ -46,6 +46,13 @@ typedef struct Options {
 
 int main( int argc, char *argv[] )
 {
+    
+    
+    directory *directories = 0;
+    file *files = 0;
+    hlink *hlinks = 0;
+
+
     int option;
     //char *endPointer;
     char* target;
@@ -156,4 +163,15 @@ int main( int argc, char *argv[] )
         fprintf(stderr, "Error: No mode specified.\n");
         exit(-1);
     }
+
+
+    switch(capture.specified) {
+        case 'c':
+            opendir(capture.directory);
+            readdir(capture.directory);
+
+
+
+    }
+
 }
