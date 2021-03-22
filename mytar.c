@@ -57,10 +57,10 @@ typedef struct Options {
 } options;
 
 void insert_directory(directory n){
-    file temp = file_head; //flag to check last node
+    directory temp = directory_head; //flag to check last node
     n->next = 0; //clear out flink just in case
-    if(file_head == 0) {
-        file_head = n;
+    if(directory_head == 0) {
+        directory_head = n;
         return;
     }
     else {
@@ -102,10 +102,10 @@ void insert_file(file n){
 }
 
 void insert_hlink(hlink n){
-    file temp = file_head; //flag to check last node
+    hlink temp = hlink_head; //flag to check last node
     n->next = 0; //clear out flink just in case
-    if(file_head == 0) {
-        file_head = n;
+    if(hlink_head == 0) {
+        hlink_head = n;
         return;
     }
     else {
