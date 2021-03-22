@@ -26,15 +26,23 @@
     - Go through the directory specified and find all files, directories, and links inside of it.
     - Understand relative paths, modes, modified times, inodes, etc.
 
+    DONE
+
 Step 2)
     - Fill appropriate structs with data from directories, files, and links scanned in step 1
     - Store everything in their appropriate linked lists
 
+    DONE
+
 Step 3) 
     - Write directories, files, and links to a tar file in the appropriate format 
+    DONE
 
 Step 4) 
     - Write a method that does steps 1-2, but starting from a tar file
+
+    (Do for x --> opposite of what did for c -- start from tar file)
+    (For t, just print details, don't extract)
 
 Step 5)
     - For extracting from tar, write methods to write everything in the linked lists back to disk
@@ -125,10 +133,6 @@ void insert_hlink(hlink n){
 }
 
 
-
-
-
-
 // This method is heavily inspired by Dr. Arnold's classnotes. //
 int get_size(const char *directory_name){
 
@@ -159,45 +163,41 @@ int get_size(const char *directory_name){
 
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
-            exists = stat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
+            exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
                 fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
                 exit(-1);
             }
             if(!get_inode( buf.st_ino )) {  //inode not yet seen; add to list and process            
                 set_inode(buf.st_ino, fullname);
-
                 if (S_ISDIR(buf.st_mode)) {
-                    printf("%10lld %s/\n", buf.st_size, fullname);
-                    directory new_dir = malloc(sizeof(directory));
-                    new_dir->name = malloc(sizeof(fullname));
-                    strcpy(new_dir->name, fullname);
-                    new_dir->name_length = strlen(fullname); //This right?
-                    new_dir->mode = buf.st_mode;
-                    new_dir->modification_time = buf.st_mtime;
-                    new_dir->inode_number = buf.st_ino;
-                    insert_directory(new_dir);
-                    if (strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) {            
+                    if (strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) { 
+                        printf("%10lld %s/\n", (long long int) buf.st_size, fullname);
+                        directory new_dir = malloc(dir_struct_size);
+                        new_dir->name = malloc(strlen(fullname)*sizeof(char));
+                        strcpy(new_dir->name, fullname);
+                        new_dir->name_length = strlen(fullname); //This right?
+                        new_dir->mode = buf.st_mode;
+                        new_dir->modification_time = buf.st_mtime;
+                        new_dir->inode_number = buf.st_ino;
+                        insert_directory(new_dir);      
                         total_size += get_size(fullname);        
                     }  
-                } else if (S_ISLNK(buf.st_mode)) {
-                    printf("%10lld %s@\n", buf.st_size, fullname);
+                } else if (S_ISLNK(buf.st_mode) || buf.st_nlink > 1) {
+                    printf("%10lld %s@\n", (long long int) buf.st_size, fullname);
 
-                    hlink new_hlink = malloc(sizeof(hlink));
-                    new_hlink->name = malloc(sizeof(fullname));
+                    hlink new_hlink = malloc(hlink_struct_size);
+                    new_hlink->name = malloc(strlen(fullname)*sizeof(char));
                     strcpy(new_hlink->name, fullname);
                     new_hlink->name_length = strlen(fullname); //This right?
-                    new_hlink->mode = buf.st_mode;
-                    new_hlink->modification_time = buf.st_mtime;
                     new_hlink->inode_number = buf.st_ino;
                     //new_file->content = fgetc((buf);
                     insert_hlink(new_hlink);
                     
                 } else {
-                    printf("%10lld %s\n", buf.st_size, fullname);
-
-                    file new_file = malloc(sizeof(file));
-                    new_file->name = malloc(sizeof(fullname));
+                    printf("%10lld %s\n", (long long int) buf.st_size, fullname);
+                    file new_file = malloc(file_struct_size);
+                    new_file->name = malloc(strlen(fullname)*sizeof(char));
                     strcpy(new_file->name, fullname);
                     new_file->name_length = strlen(fullname); //This right?
                     new_file->mode = buf.st_mode;
@@ -217,13 +217,6 @@ int get_size(const char *directory_name){
 
 
     }
-
-
-
-
-
-
-
 
 
 int main( int argc, char *argv[] )
@@ -356,7 +349,66 @@ int main( int argc, char *argv[] )
         case 'c':
             printf("%10d total\n", get_size(capture.directory));
 
+            FILE *tarfile = fopen(capture.archivefile, "w"); //We are writing to the archive file
+            if(tarfile == NULL){
+                fprintf(stderr, "Could not create %s.\n", capture.archivefile);
+                exit(-1);
+            } 
+            uint32_t magic = MAGIC;
+            fwrite(&magic, 4, 1, tarfile);
 
+    // u_int64_t inode_number;
+    // u_int32_t name_length;
+    // char *name;
+    // u_int32_t mode;
+    // u_int64_t modification_time;
+    // struct Directory *next;
+
+
+
+            directory temp = directory_head;
+            while(temp != 0){
+                fwrite(&temp->inode_number, 8, 1, tarfile);
+                fwrite(&temp->name_length, 4, 1, tarfile);
+                fwrite(temp->name, strlen(temp->name), 1, tarfile);
+                fwrite(&temp->mode, 4, 1, tarfile);
+                fwrite(&temp->modification_time, 8, 1, tarfile);
+                temp = temp->next;
+            }
+            file tmpfile = file_head;
+            char o;
+            while(tmpfile !=0){
+                fwrite(&tmpfile->inode_number, 8, 1, tarfile);
+                fwrite(&tmpfile->name_length, 4, 1, tarfile);
+                fwrite(tmpfile->name, strlen(tmpfile->name), 1, tarfile);
+                fwrite(&tmpfile->mode, 4, 1, tarfile);
+                fwrite(&tmpfile->modification_time, 8, 1, tarfile);
+                fwrite(&tmpfile->size, 8, 1, tarfile);
+                FILE *inptr = fopen(tmpfile->name,"r");
+                if(inptr == 0){
+                    fprintf(stderr,"Error: Couldn't open %s for reading.",tmpfile->name);
+                }
+                while((o=fgetc(inptr))!=EOF){
+                    fputc(o,tarfile);
+                }
+                fclose(inptr);
+                tmpfile = tmpfile->next;
+            }
+
+            hlink tempy = hlink_head;
+            while(temp != 0){
+                fwrite(&tempy->inode_number, 8, 1, tarfile);
+                fwrite(&tempy->name_length, 4, 1, tarfile);
+                fwrite(tempy->name, strlen(temp->name), 1, tarfile);
+                tempy = tempy->next;
+            }
+
+
+
+
+            fclose(tarfile); //at the end
+        case 'x':
+        //capture.archivefile This is my tar file
 
      }
 
