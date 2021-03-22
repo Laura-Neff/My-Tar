@@ -142,10 +142,6 @@ int get_size(const char *directory_name){
         DIR *d;
         struct dirent *de;
         char *fullname;
-
-        directory filled_directory;
-        file filled_file;
-        hlink filled_hlink;
     
           
         d = opendir(directory_name); //Directory pointer
@@ -217,6 +213,156 @@ int get_size(const char *directory_name){
 
 
     }
+
+
+
+    int tar_size(const char *tarfile){
+
+        struct stat buf;
+        int exists = 0;
+        int off_t size, total_size = 0;
+        DIR *d;
+        FILE *tar;
+        size_t elements_read;
+
+        struct dirent *de;
+        char *fullname;
+
+
+        FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
+            if(tarfile == NULL){
+                fprintf(stderr, "Error: Could not read file at this time. %s.\n", capture.archivefile);
+                exit(-1);
+            } 
+            
+        
+         uint32_t magic = 0;
+         //elements_read = keeps track of how many times we called fread()
+         elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
+         if(elements_read != 1) {
+             fprintf(stderr, "Error: Reading error.\n");
+            exit(-1);
+         }
+
+         if(magic != MAGIC){
+             fprintf(stderr, "Error: Bad magic number (%d), should be: %d.\n", magic, MAGIC);
+             exit(-1);
+         }
+
+         while(!feof(tar)){
+              elements_read = 0; 
+              u_int64_t inode_number;
+              u_int32_t name_length;
+              char *name;
+              u_int32_t mode;
+              u_int64_t modification_time;
+
+              elements_read += fread(&inode_number, 8, 1, tar);
+              elements_read += fread(&name_length, 4, 1, tar);
+              name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              elements_read += fread(&name, name_length, 1, tar);
+              elements_read += fread(&mode, 4, 1, tar);
+              elements_read += fread(&modification_time, 8, 1, tar);
+
+               if(elements_read != 5) {
+                    fprintf(stderr, "Error: Reading error.\n");
+                    exit(-1);
+                }
+
+
+         }
+
+
+
+
+
+
+
+    //     fwrite(&magic, 4, 1, tarfile);
+
+    // // u_int64_t inode_number;
+    // // u_int32_t name_length;
+    // // char *name;
+    // // u_int32_t mode;
+    // // u_int64_t modification_time;
+    // // struct Directory *next;
+
+
+
+    //         directory temp = directory_head;
+    //         while(temp != 0){
+    //             fwrite(&temp->inode_number, 8, 1, tarfile);
+    //             fwrite(&temp->name_length, 4, 1, tarfile);
+    //             fwrite(temp->name, strlen(temp->name), 1, tarfile);
+    //             fwrite(&temp->mode, 4, 1, tarfile);
+    //             fwrite(&temp->modification_time, 8, 1, tarfile);
+    //             temp = temp->next;
+    //         }
+    //         file tmpfile = file_head;
+    //         char o;
+    //         while(tmpfile !=0){
+    //             fwrite(&tmpfile->inode_number, 8, 1, tarfile);
+    //             fwrite(&tmpfile->name_length, 4, 1, tarfile);
+    //             fwrite(tmpfile->name, strlen(tmpfile->name), 1, tarfile);
+    //             fwrite(&tmpfile->mode, 4, 1, tarfile);
+    //             fwrite(&tmpfile->modification_time, 8, 1, tarfile);
+    //             fwrite(&tmpfile->size, 8, 1, tarfile);
+    //             FILE *inptr = fopen(tmpfile->name,"r");
+    //             if(inptr == 0){
+    //                 fprintf(stderr,"Error: Couldn't open %s for reading.",tmpfile->name);
+    //             }
+    //             while((o=fgetc(inptr))!=EOF){
+    //                 fputc(o,tarfile);
+    //             }
+    //             fclose(inptr);
+    //             tmpfile = tmpfile->next;
+    //         }
+
+    //         hlink tempy = hlink_head;
+    //         while(temp != 0){
+    //             fwrite(&tempy->inode_number, 8, 1, tarfile);
+    //             fwrite(&tempy->name_length, 4, 1, tarfile);
+    //             fwrite(tempy->name, strlen(temp->name), 1, tarfile);
+    //             tempy = tempy->next;
+    //         }
+
+
+
+
+    //         fclose(tarfile); //at the end
+
+
+
+
+
+   
+
+    
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 int main( int argc, char *argv[] )
@@ -409,6 +555,7 @@ int main( int argc, char *argv[] )
             fclose(tarfile); //at the end
         case 'x':
         //capture.archivefile This is my tar file
+        //Do the same as when I was going through directory, where I was creating structs and then extracting
 
      }
 
