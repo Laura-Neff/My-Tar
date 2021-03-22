@@ -252,7 +252,7 @@ int get_size(const char *directory_name){
          while(!feof(tar)){
               elements_read = 0; 
               u_int64_t inode_number;
-              u_int32_t name_length;
+              u_int32_t name_length; //Just so you know where the name ends in our tarfile format, because name is n bytes and is variable
               char *name;
               u_int32_t mode;
               u_int64_t modification_time;
@@ -271,23 +271,30 @@ int get_size(const char *directory_name){
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
                      directory new_dir = malloc(dir_struct_size);
-                     new_dir->name = name;
+                     new_dir->name = name; //Generated upon file creation. Nothing else to say to hard disk.
                      new_dir->name_length = name_length; 
-                     new_dir->mode = mode;
-                     new_dir->modification_time = modification_time;
-                     new_dir->inode_number = inode_number;
+                     new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
+                     new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
+                     new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
                      insert_directory(new_dir);
                      int result = mkdir(name,mode);
                      if(result == -1){
                          fprintf(stderr, "Error: Could not make directory.\n");
                          exit(-1);
                      }
+
+                    result =  utimes(name, modification_time);
+                    if(result == -1){
+                        fprintf(stderr, "Error: Could not set modification time for directory %s.\n", name);
+                        exit(-1);
+                    }
+
                                  
                 } else {
                     file new_file = malloc(file_struct_size);
                     new_file->name = name;
                     new_file->name_length = name_length;
-                    new_file->mode = mode;
+                    new_file->mode = mode; 
                     new_file->modification_time = modification_time;
                     new_file->inode_number = inode_number;
                     
@@ -299,7 +306,7 @@ int get_size(const char *directory_name){
                     new_file->size = size;
                     insert_file(new_file);
 
-                    FILE *out_file = fopen(name, "r");
+                    FILE *out_file = fopen(name, "w");
                     if(out_file == NULL) {
                         fprintf(stderr, "Error: Could not create file %s.\n", name);
                         exit(-1);
@@ -311,6 +318,19 @@ int get_size(const char *directory_name){
                         size--; //Decrement size by one (which is one byte) each time
                     }
                     fclose(out_file);
+
+                    int result =  chmod(name, mode);
+                     if(result == -1){
+                         fprintf(stderr, "Error: Could not set permissions for file %s.\n", name);
+                         exit(-1);
+                     }
+
+                    result =  utimes(name, modification_time);
+                    if(result == -1){
+                        fprintf(stderr, "Error: Could not set modification time for file %s.\n", name);
+                        exit(-1);
+                    }
+
 
                 }
                 
