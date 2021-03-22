@@ -43,8 +43,10 @@ Step 5)
 */
 
 
-// This has been inspired by Dr. Arnold's classnotes //
 
+ directory directory_head = 0;
+ file file_head = 0;
+ hlink hlink_head = 0;
 
 
 typedef struct Options {
@@ -54,7 +56,80 @@ typedef struct Options {
     char *directory;
 } options;
 
+void insert_directory(directory n){
+    file temp = file_head; //flag to check last node
+    n->next = 0; //clear out flink just in case
+    if(file_head == 0) {
+        file_head = n;
+        return;
+    }
+    else {
+        while(temp->next != 0){ //List traversal
+            if(temp->inode_number == n->inode_number){
+                return;
+            }
+            temp = temp->next;
+        }
+        temp->next = n;
+        return;
+        //find last node
+        //make last node next new node
+    }
 
+
+}
+
+void insert_file(file n){
+    file temp = file_head; //flag to check last node
+    n->next = 0; //clear out flink just in case
+    if(file_head == 0) {
+        file_head = n;
+        return;
+    }
+    else {
+        while(temp->next != 0){ //List traversal
+            if(temp->inode_number == n->inode_number){
+                return;
+            }
+            temp = temp->next;
+        }
+        temp->next = n;
+        return;
+        //find last node
+        //make last node next new node
+    }
+
+}
+
+void insert_hlink(hlink n){
+    file temp = file_head; //flag to check last node
+    n->next = 0; //clear out flink just in case
+    if(file_head == 0) {
+        file_head = n;
+        return;
+    }
+    else {
+        while(temp->next != 0){ //List traversal
+            if(temp->inode_number == n->inode_number){
+                return;
+            }
+            temp = temp->next;
+        }
+        temp->next = n;
+        return;
+        //find last node
+        //make last node next new node
+    }
+
+
+}
+
+
+
+
+
+
+// This method is heavily inspired by Dr. Arnold's classnotes. //
 int get_size(const char *directory_name){
 
         struct stat buf;
@@ -63,6 +138,10 @@ int get_size(const char *directory_name){
         DIR *d;
         struct dirent *de;
         char *fullname;
+
+        directory filled_directory;
+        file filled_file;
+        hlink filled_hlink;
     
           
         d = opendir(directory_name); //Directory pointer
@@ -77,10 +156,10 @@ int get_size(const char *directory_name){
 
         fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+258));
 
+
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
-            exists = stat(fullname, &buf);
-            // exists = lstat(de->d_name, &buf); //Call stat on directory name and upload inode info into stat buf structure
+            exists = stat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
                 fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
                 exit(-1);
@@ -89,24 +168,51 @@ int get_size(const char *directory_name){
                 set_inode(buf.st_ino, fullname);
 
                 if (S_ISDIR(buf.st_mode)) {
+                    directory new_dir = malloc(sizeof(directory));
+                    new_dir->name = malloc(sizeof(fullname));
+                    strcpy(new_dir->name, fullname);
+                    new_dir->name_length = strlen(fullname); //This right?
+                    new_dir->mode = buf.st_mode;
+                    new_dir->modification_time = buf.st_mtime;
+                    new_dir->inode_number = buf.st_ino;
+                    insert_directory(new_dir);
                     printf("%10lld %s/\n", buf.st_size, fullname);
+                    if (strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) {            
+                        total_size += get_size(fullname);        
+                    }  
                 } else if (S_ISLNK(buf.st_mode)) {
+                    hlink new_hlink = malloc(sizeof(hlink));
+                    new_hlink->name = malloc(sizeof(fullname));
+                    strcpy(new_hlink->name, fullname);
+                    new_hlink->name_length = strlen(fullname); //This right?
+                    new_hlink->mode = buf.st_mode;
+                    new_hlink->modification_time = buf.st_mtime;
+                    new_hlink->inode_number = buf.st_ino;
+                    //new_file->content = fgetc((buf);
+                    insert_hlink(new_hlink);
+
+
+
                     printf("%10lld %s@\n", buf.st_size, fullname);
                 } else if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
                     printf("%10lld %s*\n", buf.st_size, fullname);
                 } else {
+                    file new_file = malloc(sizeof(file));
+                    new_file->name = malloc(sizeof(fullname));
+                    strcpy(new_file->name, fullname);
+                    new_file->name_length = strlen(fullname); //This right?
+                    new_file->mode = buf.st_mode;
+                    new_file->modification_time = buf.st_mtime;
+                    new_file->inode_number = buf.st_ino;
+                    new_file->size = buf.st_size;
+                    //new_file->content = fgetc((buf);
+                    insert_file(new_file);
+
                     printf("%10lld %s\n", buf.st_size, fullname); //Access fields in buf to print out size and name in each file
                 }
                     total_size += buf.st_size;
         }
-         /* Make the recursive call if the file is a directory */        
-        if (S_ISDIR(buf.st_mode) && strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) {            
-            total_size += get_size(fullname);        
-        }  
     }
-         
-
-        //printf("%10d total\n", total_size);
         closedir(d);
         return total_size;
 
@@ -124,10 +230,6 @@ int get_size(const char *directory_name){
 int main( int argc, char *argv[] )
 {
     
-    
-    directory *directories = 0;
-    file *files = 0;
-    hlink *hlinks = 0;
 
     struct stat buf;
     int exists = 0;
@@ -254,7 +356,6 @@ int main( int argc, char *argv[] )
     switch(capture.specified) {
         case 'c':
             printf("%10d total\n", get_size(capture.directory));
-
 
 
 

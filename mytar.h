@@ -15,8 +15,8 @@ typedef struct File {
     u_int32_t modification_time;
     u_int32_t size;
     char *content;
-    struct file *next;
-} file;
+    struct File *next;
+} * file;
 
 typedef struct Directory {
     u_int32_t inode_number;
@@ -24,8 +24,8 @@ typedef struct Directory {
     char *name;
     u_int16_t mode;
     u_int32_t modification_time;
-    struct directory *next;
-} directory;
+    struct Directory *next;
+} * directory;
 
 typedef struct Hard_Links {
     u_int32_t inode_number;
@@ -33,6 +33,8 @@ typedef struct Hard_Links {
     char *name;
     u_int16_t mode;
     u_int32_t modification_time;
-    struct hlink *next;
-} hlink;
+    struct Hard_Links *next;
+} * hlink;
+
+
 
