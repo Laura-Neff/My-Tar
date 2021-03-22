@@ -256,6 +256,7 @@ int get_size(const char *directory_name){
               char *name;
               u_int32_t mode;
               u_int64_t modification_time;
+              u_int64_t size;
 
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
@@ -268,6 +269,52 @@ int get_size(const char *directory_name){
                     fprintf(stderr, "Error: Reading error.\n");
                     exit(-1);
                 }
+                if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
+                     directory new_dir = malloc(dir_struct_size);
+                     new_dir->name = name;
+                     new_dir->name_length = name_length; 
+                     new_dir->mode = mode;
+                     new_dir->modification_time = modification_time;
+                     new_dir->inode_number = inode_number;
+                     insert_directory(new_dir);
+                     int result = mkdir(name,mode);
+                     if(result == -1){
+                         fprintf(stderr, "Error: Could not make directory.\n");
+                         exit(-1);
+                     }
+                                 
+                } else {
+                    file new_file = malloc(file_struct_size);
+                    new_file->name = name;
+                    new_file->name_length = name_length;
+                    new_file->mode = mode;
+                    new_file->modification_time = modification_time;
+                    new_file->inode_number = inode_number;
+                    
+                    elements_read = fread(&size, 8, 1, tar);
+                    if(elements_read != 1) {
+                        fprintf(stderr, "Error: Reading error.\n");
+                        exit(-1);
+                    }
+                    new_file->size = size;
+                    insert_file(new_file);
+
+                    FILE *out_file = fopen(name, "r");
+                    if(out_file == NULL) {
+                        fprintf(stderr, "Error: Could not create file %s.\n", name);
+                        exit(-1);
+                    }
+                    char o;
+                    while(size > 0){ //Stop when we've gone through the entire file
+                        fgetc(o, tar); //Gets one byte from the tar file. It's the data part of the file (the content)
+                        fputc(o, out_file); //Writes one byte to the new output file
+                        size--; //Decrement size by one (which is one byte) each time
+                    }
+                    fclose(out_file);
+
+                }
+                
+
 
 
          }
