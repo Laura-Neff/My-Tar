@@ -168,6 +168,7 @@ int get_size(const char *directory_name){
                 set_inode(buf.st_ino, fullname);
 
                 if (S_ISDIR(buf.st_mode)) {
+                    printf("%10lld %s/\n", buf.st_size, fullname);
                     directory new_dir = malloc(sizeof(directory));
                     new_dir->name = malloc(sizeof(fullname));
                     strcpy(new_dir->name, fullname);
@@ -176,11 +177,12 @@ int get_size(const char *directory_name){
                     new_dir->modification_time = buf.st_mtime;
                     new_dir->inode_number = buf.st_ino;
                     insert_directory(new_dir);
-                    printf("%10lld %s/\n", buf.st_size, fullname);
                     if (strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) {            
                         total_size += get_size(fullname);        
                     }  
                 } else if (S_ISLNK(buf.st_mode)) {
+                    printf("%10lld %s@\n", buf.st_size, fullname);
+
                     hlink new_hlink = malloc(sizeof(hlink));
                     new_hlink->name = malloc(sizeof(fullname));
                     strcpy(new_hlink->name, fullname);
@@ -190,13 +192,10 @@ int get_size(const char *directory_name){
                     new_hlink->inode_number = buf.st_ino;
                     //new_file->content = fgetc((buf);
                     insert_hlink(new_hlink);
-
-
-
-                    printf("%10lld %s@\n", buf.st_size, fullname);
-                } else if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-                    printf("%10lld %s*\n", buf.st_size, fullname);
+                    
                 } else {
+                    printf("%10lld %s\n", buf.st_size, fullname);
+
                     file new_file = malloc(sizeof(file));
                     new_file->name = malloc(sizeof(fullname));
                     strcpy(new_file->name, fullname);
@@ -208,9 +207,9 @@ int get_size(const char *directory_name){
                     //new_file->content = fgetc((buf);
                     insert_file(new_file);
 
-                    printf("%10lld %s\n", buf.st_size, fullname); //Access fields in buf to print out size and name in each file
+                     //Access fields in buf to print out size and name in each file
                 }
-                    total_size += buf.st_size;
+                total_size += buf.st_size;
         }
     }
         closedir(d);

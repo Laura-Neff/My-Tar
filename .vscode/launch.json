@@ -5,17 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb/Linux) Build and debug active file",
+            "name": "(lldb/clang/MacOS) Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/mytar",
-            "args": ["-c","-f", "a.tar","."],
+            "args": ["-c","-f", "a.tar","../Oxford CS"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "gdb",
-            "preLaunchTask": "C/C++: gcc build active file"
+            "MIMode": "lldb",
         }
     ]
 }
