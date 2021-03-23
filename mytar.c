@@ -286,12 +286,12 @@ int get_size(const char *directory_name){
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(64);
-                     if (!accessTimeVal){ perror("Error: malloc()"); exit(-1);}
-                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+                     //struct timeval * accessTimeVal = malloc(64);
+                     //if (!accessTimeVal){ perror("Error: malloc()"); exit(-1);}
+                     //result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
-                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[0] = *moddyTimeVal;
                      timevalArray[1] = *moddyTimeVal;
             
 
@@ -335,11 +335,11 @@ int get_size(const char *directory_name){
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(64);
-                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+                     //struct timeval * accessTimeVal = malloc(64);
+                     //result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
-                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[0] = *moddyTimeVal;
                      timevalArray[1] = *moddyTimeVal;
 
                      result = utimes(name, timevalArray);
