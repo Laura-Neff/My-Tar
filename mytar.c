@@ -296,10 +296,7 @@ int get_size(const char *directory_name){
             
 
                     result = utimes(name, timevalArray);
-                    if(result == -1){
-                        perror("Error: utimes()");
-                        exit(-1);
-                    }
+                    
 
                                  
                 } else {
@@ -347,10 +344,6 @@ int get_size(const char *directory_name){
 
                      result = utimes(name, timevalArray);
 
-                    if(result == -1){
-                        perror("Error: utimes()");
-                        exit(-1);
-                    }
 
 
                 }
@@ -443,7 +436,10 @@ int get_size(const char *directory_name){
                         exit(-1);
                     }
 
-                    fseek(tar, size, SEEK_CUR);
+                    if(fseek(tar, size, SEEK_CUR)){
+                        perror("Error: fseek()");
+                        exit(-1);
+                    }
 
                     if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
                         printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
