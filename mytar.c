@@ -256,7 +256,7 @@ int get_size(const char *directory_name){
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
             if(tarfile == NULL){
-                fprintf(stderr, "Error: Could not read file at this time. %s.\n", tarfile);
+                perror("fopen()");
                 exit(-1);
             } 
             
@@ -265,7 +265,7 @@ int get_size(const char *directory_name){
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
          if(elements_read != 1) {
-             fprintf(stderr, "Error: Reading error.\n");
+             perror("fread()");
             exit(-1);
          }
 
@@ -290,10 +290,10 @@ int get_size(const char *directory_name){
             
             if(elements_read != 3) {
                    if (feof(tar)){return 0;}
-                    fprintf(stderr, "Error: Reading error.\n");
+                    perror("fread()");
                     exit(-1);
                 }
-                
+
             if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
                  link(get_inode(inode_number), name);
                 continue;
@@ -306,7 +306,7 @@ int get_size(const char *directory_name){
 
                if(elements_read != 5) {
                    if (feof(tar)){return 0;}
-                    fprintf(stderr, "Error: Reading error.\n");
+                    perror("fread()");
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
@@ -319,7 +319,7 @@ int get_size(const char *directory_name){
                      insert_directory(new_dir);
                      int result = mkdir(name,mode);
                      if(result == -1){
-                         fprintf(stderr, "Error: Could not make directory.\n");
+                         perror("mkdir()");
                          exit(-1);
                      }
 
@@ -337,7 +337,7 @@ int get_size(const char *directory_name){
 
                     result =  utimes(name, timevalArray);
                     if(result == -1){
-                        fprintf(stderr, "Error: Could not set modification time for directory %s.\n", name);
+                        perror("utimes()");
                         exit(-1);
                     }
 
@@ -352,7 +352,7 @@ int get_size(const char *directory_name){
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
-                        fprintf(stderr, "Error: Reading error.\n");
+                        perror("fread()");
                         exit(-1);
                     }
                     new_file->size = size;
@@ -360,7 +360,7 @@ int get_size(const char *directory_name){
 
                     FILE *out_file = fopen(name, "w");
                     if(out_file == NULL) {
-                        fprintf(stderr, "Error: Could not create file %s.\n", name);
+                        perror("fopen()");
                         exit(-1);
                     }
                     char o;
@@ -373,7 +373,7 @@ int get_size(const char *directory_name){
 
                     int result =  chmod(name, mode);
                      if(result == -1){
-                         fprintf(stderr, "Error: Could not set permissions for file %s.\n", name);
+                         perror("chmod()");
                          exit(-1);
                      }
 
@@ -393,7 +393,7 @@ int get_size(const char *directory_name){
 
 
                     if(result == -1){
-                        fprintf(stderr, "Error: Could not set modification time for file %s.\n", name);
+                        perror("utimes()");
                         exit(-1);
                     }
 
@@ -432,7 +432,7 @@ int get_size(const char *directory_name){
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
             if(tarfile == NULL){
-                fprintf(stderr, "Error: Could not read file at this time. %s.\n", tarfile);
+                perror("fread()");
                 exit(-1);
             } 
             
@@ -441,7 +441,7 @@ int get_size(const char *directory_name){
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
          if(elements_read != 1) {
-             fprintf(stderr, "Error: Reading error.\n");
+             perror("fread()");
             exit(-1);
          }
 
@@ -466,7 +466,7 @@ int get_size(const char *directory_name){
 
               if(elements_read != 3) {
                    if (feof(tar)){return 0;}
-                    fprintf(stderr, "Error: Reading error.\n");
+                    perror("fread()");
                     exit(-1);
                 }
 
@@ -483,7 +483,7 @@ int get_size(const char *directory_name){
 
                if(elements_read != 5) {
                    if (feof(tar)){return 0;}
-                    fprintf(stderr, "Error: Reading error.\n");
+                    perror("fread()");
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
@@ -511,7 +511,7 @@ int get_size(const char *directory_name){
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
-                        fprintf(stderr, "Error: Reading error.\n");
+                        perror("fread()");
                         exit(-1);
                     }
                     new_file->size = size;
@@ -707,7 +707,7 @@ int main( int argc, char *argv[] )
 
             FILE *tarfile = fopen(capture.archivefile, "w"); //We are writing to the archive file
             if(tarfile == NULL){
-                fprintf(stderr, "Could not create %s.\n", capture.archivefile);
+                perror("fopen()");
                 exit(-1);
             } 
             uint32_t magic = MAGIC;
@@ -742,7 +742,7 @@ int main( int argc, char *argv[] )
                 fwrite(&tmpfile->size, 8, 1, tarfile);
                 FILE *inptr = fopen(tmpfile->name,"r");
                 if(inptr == 0){
-                    fprintf(stderr,"Error: Couldn't open %s for reading.",tmpfile->name);
+                    perror("fread()");
                 }
                 while((o=fgetc(inptr))!=EOF){
                     fputc(o,tarfile);
