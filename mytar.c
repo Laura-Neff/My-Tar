@@ -216,10 +216,10 @@ int get_size(const char *directory_name){
 
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
-            if(tarfile == NULL){
-                perror("Error: fopen()");
-                exit(-1);
-            } 
+        if(tar == NULL){
+            perror("Error: fopen()");
+            exit(-1);
+        } 
             
          uint32_t magic = 0;
          //elements_read = keeps track of how many times we called fread()
@@ -255,10 +255,12 @@ int get_size(const char *directory_name){
                     exit(-1);
             }
 
-            if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
+            if(get_inode(inode_number)) {  //is this a hard link? if so, stop here   
+                printf("%s@ -- inode: %llu\n", name, (long long unsigned int) inode_number);       
                 int result = link(get_inode(inode_number), name);
                 if (result==-1){
-                    perror("Error: link()");
+                    fprintf(stderr,"Error: link(%s)",name);
+                    perror(", perror");
                     exit(-1);
                 }
                 continue;
@@ -275,6 +277,7 @@ int get_size(const char *directory_name){
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
+                    printf("%s/ -- inode: %llu, mode: %o, mtime: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time);
                      int result = mkdir(name,mode);
                      if(result == -1){
                          perror("Error: mkdir()");
@@ -286,25 +289,28 @@ int get_size(const char *directory_name){
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(64);
-                     if (!accessTimeVal){ perror("Error: malloc()"); exit(-1);}
-                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+                     //struct timeval * accessTimeVal = malloc(64);
+                     //if (!accessTimeVal){ perror("Error: malloc()"); exit(-1);}
+                     //result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
-                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[0] = *moddyTimeVal;
                      timevalArray[1] = *moddyTimeVal;
             
 
                     result = utimes(name, timevalArray);
-                    if(result == -1){
-                        perror("Error: utimes()");
-                        exit(-1);
-                    }
+                    
+                    
 
                                  
                 } else {
                     
                     elements_read = fread(&size, 8, 1, tar);
+                    if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
+                        printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    } else {
+                        printf("%s -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    }
                     if(elements_read != 1) {
                         perror("Error: fread()");
                         exit(-1);
@@ -318,6 +324,10 @@ int get_size(const char *directory_name){
                     char o;
                     while(size > 0){ //Stop when we've gone through the entire file
                         o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
+                        if (o==EOF){
+                            fprintf(stderr,"Error: unexpected EOF\n");
+                            exit(-1);
+                        }
                         char w = fputc(o, out_file); //Writes one byte to the new output file
                         if (w!=o){
                             perror("Error: fputc():");
@@ -338,19 +348,15 @@ int get_size(const char *directory_name){
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(64);
-                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+                     //struct timeval * accessTimeVal = malloc(64);
+                     //result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
-                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[0] = *moddyTimeVal;
                      timevalArray[1] = *moddyTimeVal;
 
-                     result =  utimes(name, timevalArray);
+                     result = utimes(name, timevalArray);
 
-                    if(result == -1){
-                        perror("Error: utimes()");
-                        exit(-1);
-                    }
 
 
                 }
@@ -443,7 +449,10 @@ int get_size(const char *directory_name){
                         exit(-1);
                     }
 
-                    fseek(tar, size, SEEK_CUR);
+                    if(fseek(tar, size, SEEK_CUR)){
+                        perror("Error: fseek()");
+                        exit(-1);
+                    }
 
                     if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
                         printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
@@ -585,7 +594,7 @@ int main( int argc, char *argv[] )
         
     }
 
-      if ((optind==argc) && (capture.specified == 'c')) {
+      if ((optind==argc)) && (capture.specified == 'c')) {
         fprintf(stderr, "Error: No directory target specified.\n");
         exit(-1);
      }
@@ -604,7 +613,7 @@ int main( int argc, char *argv[] )
             for(int target=optind; target < argc; target++){
                 printf("%10d total\n", get_size(argv[target]));
             }
-            
+
             FILE *tarfile = fopen(capture.archivefile, "w"); //We are writing to the archive file
             if(tarfile == NULL){
                 perror("Error: fopen()");
@@ -662,6 +671,7 @@ int main( int argc, char *argv[] )
             
             break;
         case 'x':
+            //tar_printing(capture.archivefile);
             tar_extract(capture.archivefile);
             break;
 
