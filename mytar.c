@@ -133,11 +133,12 @@ int get_size(const char *directory_name){
                 continue;
             }
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
-            exists = stat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
+            exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
                 fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
                 exit(-1);
             }
+            if(S_ISLNK(buf.st_mode)){continue;} //skip symlinks
             if(!get_inode( buf.st_ino )) {  //inode not yet seen; add to list and process            
                 set_inode(buf.st_ino, fullname);
                 if (S_ISDIR(buf.st_mode)) {
@@ -211,7 +212,7 @@ int get_size(const char *directory_name){
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
          if(elements_read != 1) {
-             perror("Error: fread()");
+            perror("Error: fread()");
             exit(-1);
          }
 
@@ -463,15 +464,6 @@ int get_size(const char *directory_name){
                     }
 
 
-                    
-                    
-
-
-
-
-                    
-
-
                 }
                 
 
@@ -481,11 +473,6 @@ int get_size(const char *directory_name){
 
 
      return 0;
-
-
-   
-
-    
 
 
     }
