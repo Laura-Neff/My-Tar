@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/mytar",
-            "args": ["-c","-f", "a.tar","test-dir"],
+            "args": ["-x","-f", "a.tar"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/",
             "environment": [],

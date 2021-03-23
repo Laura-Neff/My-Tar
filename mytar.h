@@ -40,5 +40,10 @@ typedef struct Hard_Links {
     struct Hard_Links *next;
 } * hlink;
 
+// typedef struct timeval {
+//     long tv_sec;
+//     long tv_usec;
+// } timeval;
+
 
 

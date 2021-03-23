@@ -15,8 +15,11 @@
 #include <dirent.h>
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <utime.h>
+
 
 // #define MAPSIZE 1024
 // char ** Map=NULL;
@@ -156,6 +159,27 @@ int get_size(const char *directory_name){
 
         fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+258));
 
+        
+        exists = lstat(directory_name, &buf); //Call stat on relative path and upload inode info into stat buf structure
+        if(exists < 0){
+            fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
+            exit(-1);
+            }      
+        
+         if(!get_inode( buf.st_ino )) {
+             set_inode(buf.st_ino, directory_name);
+
+            directory first_dir = malloc(dir_struct_size);
+            first_dir->name = malloc(strlen(directory_name)*sizeof(char));
+            strcpy(first_dir->name, directory_name);
+            first_dir->name_length = strlen(directory_name); //This right?
+            first_dir->mode = buf.st_mode;
+            first_dir->modification_time = buf.st_mtime;
+            first_dir->inode_number = buf.st_ino;
+            
+            insert_directory(first_dir);
+         }
+
 
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
@@ -216,13 +240,13 @@ int get_size(const char *directory_name){
 
 
 
-    int tar_size(const char *tarfile){
+    int tar_extract(const char *tarfile){
 
         struct stat buf;
         int exists = 0;
-        int off_t size, total_size = 0;
+        //int off_t size, total_size = 0;
         DIR *d;
-        FILE *tar;
+        //FILE *tar;
         size_t elements_read;
 
         struct dirent *de;
@@ -231,7 +255,7 @@ int get_size(const char *directory_name){
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
             if(tarfile == NULL){
-                fprintf(stderr, "Error: Could not read file at this time. %s.\n", capture.archivefile);
+                fprintf(stderr, "Error: Could not read file at this time. %s.\n", tarfile);
                 exit(-1);
             } 
             
@@ -261,11 +285,12 @@ int get_size(const char *directory_name){
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
-              elements_read += fread(&name, name_length, 1, tar);
+              elements_read += fread(name, name_length, 1, tar);
               elements_read += fread(&mode, 4, 1, tar);
               elements_read += fread(&modification_time, 8, 1, tar);
 
                if(elements_read != 5) {
+                   if (feof(tar)){return 0;}
                     fprintf(stderr, "Error: Reading error.\n");
                     exit(-1);
                 }
@@ -283,7 +308,19 @@ int get_size(const char *directory_name){
                          exit(-1);
                      }
 
-                    result =  utimes(name, modification_time);
+                     struct timeval * moddyTimeVal = malloc(24);
+                     moddyTimeVal->tv_sec = modification_time;
+                     moddyTimeVal->tv_usec = 0;
+
+                     struct timeval * accessTimeVal = malloc(24);
+                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+
+                     struct timeval timevalArray[2];
+                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[1] = *moddyTimeVal;
+            
+
+                    result =  utimes(name, timevalArray);
                     if(result == -1){
                         fprintf(stderr, "Error: Could not set modification time for directory %s.\n", name);
                         exit(-1);
@@ -313,7 +350,7 @@ int get_size(const char *directory_name){
                     }
                     char o;
                     while(size > 0){ //Stop when we've gone through the entire file
-                        fgetc(o, tar); //Gets one byte from the tar file. It's the data part of the file (the content)
+                        o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
                         fputc(o, out_file); //Writes one byte to the new output file
                         size--; //Decrement size by one (which is one byte) each time
                     }
@@ -325,7 +362,23 @@ int get_size(const char *directory_name){
                          exit(-1);
                      }
 
-                    result =  utimes(name, modification_time);
+                    
+                     struct timeval * moddyTimeVal = malloc(24);
+                     moddyTimeVal->tv_sec = modification_time;
+                     moddyTimeVal->tv_usec = 0;
+
+                     struct timeval * accessTimeVal = malloc(24);
+                     result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
+
+                     struct timeval timevalArray[2];
+                     timevalArray[0] = *accessTimeVal;
+                     timevalArray[1] = *moddyTimeVal;
+
+                     result =  utimes(name, timevalArray);
+
+
+
+
                     if(result == -1){
                         fprintf(stderr, "Error: Could not set modification time for file %s.\n", name);
                         exit(-1);
@@ -340,66 +393,7 @@ int get_size(const char *directory_name){
          }
 
 
-
-
-
-
-
-    //     fwrite(&magic, 4, 1, tarfile);
-
-    // // u_int64_t inode_number;
-    // // u_int32_t name_length;
-    // // char *name;
-    // // u_int32_t mode;
-    // // u_int64_t modification_time;
-    // // struct Directory *next;
-
-
-
-    //         directory temp = directory_head;
-    //         while(temp != 0){
-    //             fwrite(&temp->inode_number, 8, 1, tarfile);
-    //             fwrite(&temp->name_length, 4, 1, tarfile);
-    //             fwrite(temp->name, strlen(temp->name), 1, tarfile);
-    //             fwrite(&temp->mode, 4, 1, tarfile);
-    //             fwrite(&temp->modification_time, 8, 1, tarfile);
-    //             temp = temp->next;
-    //         }
-    //         file tmpfile = file_head;
-    //         char o;
-    //         while(tmpfile !=0){
-    //             fwrite(&tmpfile->inode_number, 8, 1, tarfile);
-    //             fwrite(&tmpfile->name_length, 4, 1, tarfile);
-    //             fwrite(tmpfile->name, strlen(tmpfile->name), 1, tarfile);
-    //             fwrite(&tmpfile->mode, 4, 1, tarfile);
-    //             fwrite(&tmpfile->modification_time, 8, 1, tarfile);
-    //             fwrite(&tmpfile->size, 8, 1, tarfile);
-    //             FILE *inptr = fopen(tmpfile->name,"r");
-    //             if(inptr == 0){
-    //                 fprintf(stderr,"Error: Couldn't open %s for reading.",tmpfile->name);
-    //             }
-    //             while((o=fgetc(inptr))!=EOF){
-    //                 fputc(o,tarfile);
-    //             }
-    //             fclose(inptr);
-    //             tmpfile = tmpfile->next;
-    //         }
-
-    //         hlink tempy = hlink_head;
-    //         while(temp != 0){
-    //             fwrite(&tempy->inode_number, 8, 1, tarfile);
-    //             fwrite(&tempy->name_length, 4, 1, tarfile);
-    //             fwrite(tempy->name, strlen(temp->name), 1, tarfile);
-    //             tempy = tempy->next;
-    //         }
-
-
-
-
-    //         fclose(tarfile); //at the end
-
-
-
+     return 0;
 
 
    
@@ -409,6 +403,127 @@ int get_size(const char *directory_name){
 
     }
 
+
+    int tar_printing(const char *tarfile){
+
+        struct stat buf;
+        int exists = 0;
+        //int off_t size, total_size = 0;
+        DIR *d;
+        //FILE *tar;
+        size_t elements_read;
+
+        struct dirent *de;
+        char *fullname;
+
+
+        FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
+            if(tarfile == NULL){
+                fprintf(stderr, "Error: Could not read file at this time. %s.\n", tarfile);
+                exit(-1);
+            } 
+            
+        
+         uint32_t magic = 0;
+         //elements_read = keeps track of how many times we called fread()
+         elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
+         if(elements_read != 1) {
+             fprintf(stderr, "Error: Reading error.\n");
+            exit(-1);
+         }
+
+         if(magic != MAGIC){
+             fprintf(stderr, "Error: Bad magic number (%d), should be: %d.\n", magic, MAGIC);
+             exit(-1);
+         }
+
+         while(!feof(tar)){
+              elements_read = 0; 
+              u_int64_t inode_number;
+              u_int32_t name_length; //Just so you know where the name ends in our tarfile format, because name is n bytes and is variable
+              char *name;
+              u_int32_t mode;
+              u_int64_t modification_time;
+              u_int64_t size;
+
+              elements_read += fread(&inode_number, 8, 1, tar);
+              elements_read += fread(&name_length, 4, 1, tar);
+              name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              elements_read += fread(name, name_length, 1, tar);
+              elements_read += fread(&mode, 4, 1, tar);
+              elements_read += fread(&modification_time, 8, 1, tar);
+
+               if(elements_read != 5) {
+                   if (feof(tar)){return 0;}
+                    fprintf(stderr, "Error: Reading error.\n");
+                    exit(-1);
+                }
+                if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
+                     directory new_dir = malloc(dir_struct_size);
+                     new_dir->name = name; //Generated upon file creation. Nothing else to say to hard disk.
+                     new_dir->name_length = name_length; 
+                     new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
+                     new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
+                     new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
+                     insert_directory(new_dir);
+
+                 printf("%s/ -- inode: %llu, mode: %o, mtime: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time);
+
+                   
+            
+
+                                 
+                } else {
+                    file new_file = malloc(file_struct_size);
+                    new_file->name = name;
+                    new_file->name_length = name_length;
+                    new_file->mode = mode; 
+                    new_file->modification_time = modification_time;
+                    new_file->inode_number = inode_number;
+                    
+                    elements_read = fread(&size, 8, 1, tar);
+                    if(elements_read != 1) {
+                        fprintf(stderr, "Error: Reading error.\n");
+                        exit(-1);
+                    }
+                    new_file->size = size;
+                    insert_file(new_file);
+
+                    fseek(tar, size, SEEK_CUR);
+
+                    if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
+                        printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    } else {
+                        printf("%s -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    }
+
+
+                    
+                    
+
+
+
+
+                    
+
+
+                }
+                
+
+
+
+         }
+
+
+     return 0;
+
+
+   
+
+    
+
+
+    }
 
 
 
@@ -620,9 +735,14 @@ int main( int argc, char *argv[] )
 
 
             fclose(tarfile); //at the end
+            break;
         case 'x':
-        //capture.archivefile This is my tar file
-        //Do the same as when I was going through directory, where I was creating structs and then extracting
+            tar_extract(capture.archivefile);
+            break;
+
+        case 't':
+            tar_printing(capture.archivefile);
+            break;
 
      }
 
