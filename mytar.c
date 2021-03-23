@@ -107,7 +107,7 @@ int get_size(const char *directory_name){
         fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+258));
 
         
-        exists = lstat(directory_name, &buf); //Call stat on relative path and upload inode info into stat buf structure
+        exists = stat(directory_name, &buf); //Call stat on relative path and upload inode info into stat buf structure
         if(exists < 0){
             fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
             exit(-1);
