@@ -68,6 +68,10 @@ typedef struct Options {
 void insert_node(void * current, char type_id){
     node traversed = head;
     node new_node = malloc(node_struct_size);
+    if (!new_node){
+        perror("Error: malloc()");
+        exit(-1);
+    }
     new_node->current = current;
     new_node->type_id = type_id;
     new_node->next = 0;
@@ -93,31 +97,38 @@ int get_size(const char *directory_name){
         struct dirent *de;
         char *fullname;
     
-          
-        d = opendir(directory_name); //Directory pointer
-        if(d == NULL){
-            fprintf(stderr, "Error: Specified target (\"%s\") is not a directory.\n", directory_name);
-            exit(-1);
-        }
-
                     //Print size and name of each file in directory
 
                     //This is based on Dr. Arnold's classnotes
 
-        fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+258));
+        fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+2096));
+        if (!fullname){
+            perror("Error: malloc()");
+            exit(-1);
+        }
 
         
         exists = stat(directory_name, &buf); //Call stat on relative path and upload inode info into stat buf structure
         if(exists < 0){
             fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
             exit(-1);
-            }      
-        
+        }
+        if(!S_ISDIR(buf.st_mode)){
+            fprintf(stderr, "Error: Specified target (\"%s\") is not a directory.\n", directory_name);
+            exit(-1);
+        }    
+        d = opendir(directory_name);
+        if (!d){
+            perror("Error: opendir()");
+            exit(-1);
+        }
          if(!get_inode( buf.st_ino )) {
             set_inode(buf.st_ino, directory_name);
             printf("%10lld %s/\n", (long long int) buf.st_size, directory_name);
             directory first_dir = malloc(dir_struct_size);
-            first_dir->name = malloc(strlen(directory_name)*sizeof(char));
+            if (!first_dir){ perror("Error: malloc()"); exit(-1);}
+            first_dir->name = malloc(strlen(directory_name)+1);
+            if (!first_dir->name){ perror("Error: malloc()"); exit(-1);}
             strcpy(first_dir->name, directory_name);
             first_dir->name_length = strlen(directory_name); //This right?
             first_dir->mode = buf.st_mode;
@@ -127,7 +138,6 @@ int get_size(const char *directory_name){
             insert_node(first_dir,'d');
          }
 
-
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
             if (strcmp(de->d_name, ".") ==0 || strcmp(de->d_name, "..") ==0 ) {
                 continue;
@@ -135,7 +145,7 @@ int get_size(const char *directory_name){
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
             exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
-                fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
+                perror("Error: lstat()");
                 exit(-1);
             }
             if(S_ISLNK(buf.st_mode)){continue;} //skip symlinks
@@ -144,7 +154,9 @@ int get_size(const char *directory_name){
                 if (S_ISDIR(buf.st_mode)) {
                     printf("%10lld %s/\n", (long long int) buf.st_size, fullname);
                     directory new_dir = malloc(dir_struct_size);
-                    new_dir->name = malloc(strlen(fullname)*sizeof(char));
+                    if (!new_dir){ perror("Error: malloc()"); exit(-1);}
+                    new_dir->name = malloc(strlen(fullname)+1);
+                    if (!new_dir->name){ perror("Error: malloc()"); exit(-1);}
                     strcpy(new_dir->name, fullname);
                     new_dir->name_length = strlen(fullname); //This right?
                     new_dir->mode = buf.st_mode;
@@ -155,7 +167,9 @@ int get_size(const char *directory_name){
                 } else {
                     printf("%10lld %s\n", (long long int) buf.st_size, fullname);
                     file new_file = malloc(file_struct_size);
-                    new_file->name = malloc(strlen(fullname)*sizeof(char));
+                    if (!new_file){ perror("Error: malloc()"); exit(-1);}
+                    new_file->name = malloc(strlen(fullname)+1);
+                    if (!new_file->name){ perror("Error: malloc()"); exit(-1);}
                     strcpy(new_file->name, fullname);
                     new_file->name_length = strlen(fullname); //This right?
                     new_file->mode = buf.st_mode;
@@ -171,7 +185,9 @@ int get_size(const char *directory_name){
                 printf("%10lld %s@\n", (long long int) buf.st_size, fullname);
 
                 hlink new_hlink = malloc(hlink_struct_size);
-                new_hlink->name = malloc(strlen(fullname)*sizeof(char));
+                if (!new_hlink){ perror("Error: malloc()"); exit(-1);}
+                new_hlink->name = malloc(strlen(fullname)+1);
+                if (!new_hlink->name){ perror("Error: malloc()"); exit(-1);}
                 strcpy(new_hlink->name, fullname);
                 new_hlink->name_length = strlen(fullname); //This right?
                 new_hlink->inode_number = buf.st_ino;
@@ -182,8 +198,6 @@ int get_size(const char *directory_name){
         }
         closedir(d);
         return total_size;
-
-
     }
 
 
@@ -207,7 +221,6 @@ int get_size(const char *directory_name){
                 exit(-1);
             } 
             
-        
          uint32_t magic = 0;
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
@@ -232,17 +245,22 @@ int get_size(const char *directory_name){
 
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
-              name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              if (!name){ perror("Error: malloc()"); exit(-1);}
               elements_read += fread(name, name_length, 1, tar);
             
             if(elements_read != 3) {
                    if (feof(tar)){return 0;}
                     perror("Error: fread()");
                     exit(-1);
-                }
+            }
 
             if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
-                link(get_inode(inode_number), name);
+                int result = link(get_inode(inode_number), name);
+                if (result==-1){
+                    perror("Error: link()");
+                    exit(-1);
+                }
                 continue;
             } else { //otherwise, set inode and keep processing
                 set_inode(inode_number, name);
@@ -257,24 +275,19 @@ int get_size(const char *directory_name){
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
-                     directory new_dir = malloc(dir_struct_size);
-                     new_dir->name = name; //Generated upon file creation. Nothing else to say to hard disk.
-                     new_dir->name_length = name_length; 
-                     new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
-                     new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
-                     new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
-                     insert_node(new_dir,'d');
                      int result = mkdir(name,mode);
                      if(result == -1){
                          perror("Error: mkdir()");
                          exit(-1);
                      }
 
-                     struct timeval * moddyTimeVal = malloc(24);
+                     struct timeval * moddyTimeVal = malloc(64);
+                     if (!moddyTimeVal){ perror("Error: malloc()"); exit(-1);}
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(24);
+                     struct timeval * accessTimeVal = malloc(64);
+                     if (!accessTimeVal){ perror("Error: malloc()"); exit(-1);}
                      result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
@@ -282,7 +295,7 @@ int get_size(const char *directory_name){
                      timevalArray[1] = *moddyTimeVal;
             
 
-                    result =  utimes(name, timevalArray);
+                    result = utimes(name, timevalArray);
                     if(result == -1){
                         perror("Error: utimes()");
                         exit(-1);
@@ -290,20 +303,12 @@ int get_size(const char *directory_name){
 
                                  
                 } else {
-                    file new_file = malloc(file_struct_size);
-                    new_file->name = name;
-                    new_file->name_length = name_length;
-                    new_file->mode = mode; 
-                    new_file->modification_time = modification_time;
-                    new_file->inode_number = inode_number;
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
                         perror("Error: fread()");
                         exit(-1);
                     }
-                    new_file->size = size;
-                    insert_node(new_file,'f');
 
                     FILE *out_file = fopen(name, "w");
                     if(out_file == NULL) {
@@ -313,23 +318,27 @@ int get_size(const char *directory_name){
                     char o;
                     while(size > 0){ //Stop when we've gone through the entire file
                         o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
-                        fputc(o, out_file); //Writes one byte to the new output file
+                        char w = fputc(o, out_file); //Writes one byte to the new output file
+                        if (w!=o){
+                            perror("Error: fputc():");
+                            exit(-1);
+                        }
                         size--; //Decrement size by one (which is one byte) each time
                     }
                     fclose(out_file);
 
-                    int result =  chmod(name, mode);
-                     if(result == -1){
+                    int result = chmod(name, mode);
+                    if(result == -1){
                          perror("Error: chmod()");
                          exit(-1);
                      }
 
                     
-                     struct timeval * moddyTimeVal = malloc(24);
+                     struct timeval * moddyTimeVal = malloc(64);
                      moddyTimeVal->tv_sec = modification_time;
                      moddyTimeVal->tv_usec = 0;
 
-                     struct timeval * accessTimeVal = malloc(24);
+                     struct timeval * accessTimeVal = malloc(64);
                      result = gettimeofday((struct timeval * restrict) accessTimeVal, 0);
 
                      struct timeval timevalArray[2];
@@ -337,7 +346,6 @@ int get_size(const char *directory_name){
                      timevalArray[1] = *moddyTimeVal;
 
                      result =  utimes(name, timevalArray);
-
 
                     if(result == -1){
                         perror("Error: utimes()");
@@ -399,7 +407,7 @@ int get_size(const char *directory_name){
 
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
-              name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
               elements_read += fread(name, name_length, 1, tar);
 
               if(elements_read != 3) {
@@ -425,35 +433,15 @@ int get_size(const char *directory_name){
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
-                     directory new_dir = malloc(dir_struct_size);
-                     new_dir->name = name; //Generated upon file creation. Nothing else to say to hard disk.
-                     new_dir->name_length = name_length; 
-                     new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
-                     new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
-                     new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
-                     insert_node(new_dir,'d');
-
                  printf("%s/ -- inode: %llu, mode: %o, mtime: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time);
-
-                   
-            
-
-                                 
+             
                 } else {
-                    file new_file = malloc(file_struct_size);
-                    new_file->name = name;
-                    new_file->name_length = name_length;
-                    new_file->mode = mode; 
-                    new_file->modification_time = modification_time;
-                    new_file->inode_number = inode_number;
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
                         perror("Error: fread()");
                         exit(-1);
                     }
-                    new_file->size = size;
-                    insert_node(new_file,'f');
 
                     fseek(tar, size, SEEK_CUR);
 
@@ -688,7 +676,6 @@ int main( int argc, char *argv[] )
 
 
     }
-
 
 
 
