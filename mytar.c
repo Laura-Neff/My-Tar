@@ -258,7 +258,8 @@ int get_size(const char *directory_name){
             if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
                 int result = link(get_inode(inode_number), name);
                 if (result==-1){
-                    perror("Error: link()");
+                    fprintf(stderr,"Error: link(%s)",name);
+                    perror(", perror");
                     exit(-1);
                 }
                 continue;
@@ -316,7 +317,7 @@ int get_size(const char *directory_name){
                     while(size > 0){ //Stop when we've gone through the entire file
                         o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
                         if (o==EOF){
-                            fprintf(stderr,"Error: unexpected EOF");
+                            fprintf(stderr,"Error: unexpected EOF\n");
                             exit(-1);
                         }
                         char w = fputc(o, out_file); //Writes one byte to the new output file
@@ -664,6 +665,7 @@ int main( int argc, char *argv[] )
             
             break;
         case 'x':
+            //tar_printing(capture.archivefile);
             tar_extract(capture.archivefile);
             break;
 
