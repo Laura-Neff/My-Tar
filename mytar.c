@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <utime.h>
+#include <unistd.h>
 
 
 // #define MAPSIZE 1024
@@ -183,7 +184,7 @@ int get_size(const char *directory_name){
 
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
-            exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
+            exists = stat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
                 fprintf(stderr,"Error: Specified target (\"%s\") does not exist.\n", fullname);
                 exit(-1);
@@ -202,17 +203,7 @@ int get_size(const char *directory_name){
                         new_dir->inode_number = buf.st_ino;
                         insert_directory(new_dir);      
                         total_size += get_size(fullname);        
-                    }  
-                } else if (S_ISLNK(buf.st_mode) || buf.st_nlink > 1) {
-                    printf("%10lld %s@\n", (long long int) buf.st_size, fullname);
-
-                    hlink new_hlink = malloc(hlink_struct_size);
-                    new_hlink->name = malloc(strlen(fullname)*sizeof(char));
-                    strcpy(new_hlink->name, fullname);
-                    new_hlink->name_length = strlen(fullname); //This right?
-                    new_hlink->inode_number = buf.st_ino;
-                    //new_file->content = fgetc((buf);
-                    insert_hlink(new_hlink);
+                    }                    
                     
                 } else {
                     printf("%10lld %s\n", (long long int) buf.st_size, fullname);
@@ -229,9 +220,19 @@ int get_size(const char *directory_name){
 
                      //Access fields in buf to print out size and name in each file
                 }
-                total_size += buf.st_size;
+            } else {
+                printf("%10lld %s@\n", (long long int) buf.st_size, fullname);
+
+                hlink new_hlink = malloc(hlink_struct_size);
+                new_hlink->name = malloc(strlen(fullname)*sizeof(char));
+                strcpy(new_hlink->name, fullname);
+                new_hlink->name_length = strlen(fullname); //This right?
+                new_hlink->inode_number = buf.st_ino;
+                //new_file->content = fgetc((buf);
+                insert_hlink(new_hlink);
+            }
+            total_size += buf.st_size;
         }
-    }
         closedir(d);
         return total_size;
 
@@ -286,6 +287,20 @@ int get_size(const char *directory_name){
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
               elements_read += fread(name, name_length, 1, tar);
+            
+            if(elements_read != 3) {
+                   if (feof(tar)){return 0;}
+                    fprintf(stderr, "Error: Reading error.\n");
+                    exit(-1);
+                }
+                
+            if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
+                 link(get_inode(inode_number), name);
+                continue;
+            } else { //otherwise, set inode and keep processing
+                set_inode(inode_number, name);
+            };
+
               elements_read += fread(&mode, 4, 1, tar);
               elements_read += fread(&modification_time, 8, 1, tar);
 
@@ -377,8 +392,6 @@ int get_size(const char *directory_name){
                      result =  utimes(name, timevalArray);
 
 
-
-
                     if(result == -1){
                         fprintf(stderr, "Error: Could not set modification time for file %s.\n", name);
                         exit(-1);
@@ -450,6 +463,21 @@ int get_size(const char *directory_name){
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length*sizeof(char)); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
               elements_read += fread(name, name_length, 1, tar);
+
+              if(elements_read != 3) {
+                   if (feof(tar)){return 0;}
+                    fprintf(stderr, "Error: Reading error.\n");
+                    exit(-1);
+                }
+
+              if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
+                 printf("%s -- inode: %llu\n", name, (long long unsigned int) inode_number);
+                continue;
+                } else { //otherwise, set inode and keep processing
+                    set_inode(inode_number, name);
+                };
+
+              
               elements_read += fread(&mode, 4, 1, tar);
               elements_read += fread(&modification_time, 8, 1, tar);
 
