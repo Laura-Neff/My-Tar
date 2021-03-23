@@ -255,7 +255,8 @@ int get_size(const char *directory_name){
                     exit(-1);
             }
 
-            if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
+            if(get_inode(inode_number)) {  //is this a hard link? if so, stop here   
+                printf("%s@ -- inode: %llu\n", name, (long long unsigned int) inode_number);       
                 int result = link(get_inode(inode_number), name);
                 if (result==-1){
                     fprintf(stderr,"Error: link(%s)",name);
@@ -276,6 +277,7 @@ int get_size(const char *directory_name){
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
+                    printf("%s/ -- inode: %llu, mode: %o, mtime: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time);
                      int result = mkdir(name,mode);
                      if(result == -1){
                          perror("Error: mkdir()");
@@ -298,11 +300,17 @@ int get_size(const char *directory_name){
 
                     result = utimes(name, timevalArray);
                     
+                    
 
                                  
                 } else {
                     
                     elements_read = fread(&size, 8, 1, tar);
+                    if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
+                        printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    } else {
+                        printf("%s -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
+                    }
                     if(elements_read != 1) {
                         perror("Error: fread()");
                         exit(-1);
