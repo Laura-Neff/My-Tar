@@ -594,7 +594,7 @@ int main( int argc, char *argv[] )
         
     }
 
-      if ((optind==argc)) && (capture.specified == 'c')) {
+      if ((optind==argc) && (capture.specified == 'c')) {
         fprintf(stderr, "Error: No directory target specified.\n");
         exit(-1);
      }
