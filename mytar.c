@@ -345,7 +345,7 @@ int get_size(const char *directory_name){
                      timevalArray[0] = *accessTimeVal;
                      timevalArray[1] = *moddyTimeVal;
 
-                     result =  utimes(name, timevalArray);
+                     result = utimes(name, timevalArray);
 
                     if(result == -1){
                         perror("Error: utimes()");
