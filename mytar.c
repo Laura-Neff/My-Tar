@@ -216,10 +216,10 @@ int get_size(const char *directory_name){
 
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
-            if(tarfile == NULL){
-                perror("Error: fopen()");
-                exit(-1);
-            } 
+        if(tar == NULL){
+            perror("Error: fopen()");
+            exit(-1);
+        } 
             
          uint32_t magic = 0;
          //elements_read = keeps track of how many times we called fread()
