@@ -673,6 +673,21 @@ int main( int argc, char *argv[] )
                 traversed = traversed->next;
             }
             fclose(tarfile); //at the end
+            fprintf(stderr,"===CONTENTS OF TAR===\n\n");
+            FILE *inptr = fopen(capture.archivefile,"r");
+            char o;
+            int bitnumber = 0;
+            if(inptr == 0){
+                perror("Error: fread()");
+            }
+            while((o=fgetc(inptr))!=EOF){
+                fprintf(stderr,"%c",o);
+                bitnumber++;
+                if(bitnumber % 80 ==0){
+                    fprintf(stderr,"\n");
+                }
+            }
+            fclose(inptr);
             break;
         case 'x':
             tar_extract(capture.archivefile);
