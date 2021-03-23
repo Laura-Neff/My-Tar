@@ -316,7 +316,7 @@ int get_size(const char *directory_name){
                     while(size > 0){ //Stop when we've gone through the entire file
                         o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
                         if (o==EOF){
-                            fprintf(stderr,"Error: unexpected EOF"));
+                            fprintf(stderr,"Error: unexpected EOF");
                             exit(-1);
                         }
                         char w = fputc(o, out_file); //Writes one byte to the new output file
