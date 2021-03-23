@@ -176,7 +176,18 @@ int get_size(const char *directory_name){
                     new_file->modification_time = buf.st_mtime;
                     new_file->inode_number = buf.st_ino;
                     new_file->size = buf.st_size;
-                    //new_file->content = fgetc((buf);
+                    new_file->content = malloc(buf.st_size);
+                    if (!new_file->content){ perror("Error: malloc()"); exit(-1);}
+                    FILE *inptr = fopen(fullname,"r");
+                    if (inptr==NULL){
+                        perror("Error: fopen()");
+                        exit(-1);
+                    }
+                    int result = fread(new_file->content,new_file->size,1,inptr);
+                    if(result!=1){
+                        perror("Error: fread()");
+                        exit(-1);
+                    }
                     insert_node(new_file,'f');
 
                      //Access fields in buf to print out size and name in each file
@@ -249,11 +260,11 @@ int get_size(const char *directory_name){
               if (!name){ perror("Error: malloc()"); exit(-1);}
               elements_read += fread(name, name_length, 1, tar);
             
-            if(elements_read != 3) {
-                   if (feof(tar)){return 0;}
-                    perror("Error: fread()");
-                    exit(-1);
-            }
+                if(elements_read != 3) {
+                    if (feof(tar)){return 0;}
+                        perror("Error: fread()");
+                        exit(-1);
+                }
 
             if(get_inode(inode_number)) {  //is this a hard link? if so, stop here   
                 printf("%s@ -- inode: %llu\n", name, (long long unsigned int) inode_number);       
@@ -321,20 +332,9 @@ int get_size(const char *directory_name){
                         perror("Error: fopen()");
                         exit(-1);
                     }
-                    char o;
-                    while(size > 0){ //Stop when we've gone through the entire file
-                        o=fgetc(tar); //Gets one byte from the tar file. It's the data part of the file (the content)
-                        if (o==EOF){
-                            fprintf(stderr,"Error: unexpected EOF\n");
-                            exit(-1);
-                        }
-                        char w = fputc(o, out_file); //Writes one byte to the new output file
-                        if (w!=o){
-                            perror("Error: fputc():");
-                            exit(-1);
-                        }
-                        size--; //Decrement size by one (which is one byte) each time
-                    }
+                    char *content = malloc(size);
+                    fread(content,size,1,tar);
+                    fwrite(content,size,1,out_file);
                     fclose(out_file);
 
                     int result = chmod(name, mode);
@@ -434,7 +434,10 @@ int get_size(const char *directory_name){
               elements_read += fread(&modification_time, 8, 1, tar);
 
                if(elements_read != 5) {
-                   if (feof(tar)){return 0;}
+                   if (feof(tar)){
+                       fprintf(stderr,"End of file encountered\n");
+                       return 0;
+                    }
                     perror("Error: fread()");
                     exit(-1);
                 }
@@ -449,10 +452,8 @@ int get_size(const char *directory_name){
                         exit(-1);
                     }
 
-                    if(fseek(tar, size, SEEK_CUR)){
-                        perror("Error: fseek()");
-                        exit(-1);
-                    }
+                    char *content = malloc(size);
+                    fread(content,size,1,tar);
 
                     if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
                         printf("%s* -- inode: %llu, mode: %o, mtime: %llu, size: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time, (long long unsigned int) size);
@@ -644,15 +645,7 @@ int main( int argc, char *argv[] )
                         fwrite(&tmpfile->mode, 4, 1, tarfile);
                         fwrite(&tmpfile->modification_time, 8, 1, tarfile);
                         fwrite(&tmpfile->size, 8, 1, tarfile);
-                        FILE *inptr = fopen(tmpfile->name,"r");
-                        char o;
-                        if(inptr == 0){
-                            perror("Error: fread()");
-                        }
-                        while((o=fgetc(inptr))!=EOF){
-                            fputc(o,tarfile);
-                        }
-                        fclose(inptr);
+                        fwrite(&tmpfile->content,tmpfile->size,1,tarfile);
                         break;
                     case 'h':
                         tempy = (hlink) traversed->current;

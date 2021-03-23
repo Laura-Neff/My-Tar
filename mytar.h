@@ -30,6 +30,7 @@ typedef struct File {
     u_int32_t mode;
     u_int64_t modification_time;
     u_int64_t size;
+    char * content;
 } * file;
 
 typedef struct Directory {
