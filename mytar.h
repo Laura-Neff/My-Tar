@@ -10,8 +10,15 @@
 #define file_struct_size 64
 #define dir_struct_size 64
 #define hlink_struct_size 64
+#define node_struct_size 25
 
 #define MAGIC 0x7261746D
+
+typedef struct Node {
+    char type_id; //"f" for file, "d" for directory, "h" for hard link
+    void *current;
+    struct Node *next;
+} * node;
 
 typedef struct File {
     u_int64_t inode_number;
@@ -20,8 +27,6 @@ typedef struct File {
     u_int32_t mode;
     u_int64_t modification_time;
     u_int64_t size;
-    char *content;
-    struct File *next;
 } * file;
 
 typedef struct Directory {
@@ -30,14 +35,12 @@ typedef struct Directory {
     char *name;
     u_int32_t mode;
     u_int64_t modification_time;
-    struct Directory *next;
 } * directory;
 
 typedef struct Hard_Links {
     u_int64_t inode_number;
     u_int32_t name_length;
     char *name;
-    struct Hard_Links *next;
 } * hlink;
 
 // typedef struct timeval {

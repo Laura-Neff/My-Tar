@@ -56,10 +56,7 @@ Step 5)
 
 
 
- directory directory_head = 0;
- file file_head = 0;
- hlink hlink_head = 0;
-
+node head = 0;
 
 typedef struct Options {
     char specified;
@@ -68,74 +65,23 @@ typedef struct Options {
     char *directory;
 } options;
 
-void insert_directory(directory n){
-    directory temp = directory_head; //flag to check last node
-    n->next = 0; //clear out flink just in case
-    if(directory_head == 0) {
-        directory_head = n;
+void insert_node(void * current, char type_id){
+    node traversed = head;
+    node new_node = malloc(node_struct_size);
+    new_node->current = current;
+    new_node->type_id = type_id;
+    new_node->next = 0;
+    if(traversed == 0){
+        head = new_node;
         return;
-    }
-    else {
-        while(temp->next != 0){ //List traversal
-            if(temp->inode_number == n->inode_number){
-                return;
-            }
-            temp = temp->next;
+    } else {
+        while (traversed->next !=0){
+            traversed = traversed->next;
         }
-        temp->next = n;
+        traversed->next = new_node;
         return;
-        //find last node
-        //make last node next new node
     }
-
-
 }
-
-void insert_file(file n){
-    file temp = file_head; //flag to check last node
-    n->next = 0; //clear out flink just in case
-    if(file_head == 0) {
-        file_head = n;
-        return;
-    }
-    else {
-        while(temp->next != 0){ //List traversal
-            if(temp->inode_number == n->inode_number){
-                return;
-            }
-            temp = temp->next;
-        }
-        temp->next = n;
-        return;
-        //find last node
-        //make last node next new node
-    }
-
-}
-
-void insert_hlink(hlink n){
-    hlink temp = hlink_head; //flag to check last node
-    n->next = 0; //clear out flink just in case
-    if(hlink_head == 0) {
-        hlink_head = n;
-        return;
-    }
-    else {
-        while(temp->next != 0){ //List traversal
-            if(temp->inode_number == n->inode_number){
-                return;
-            }
-            temp = temp->next;
-        }
-        temp->next = n;
-        return;
-        //find last node
-        //make last node next new node
-    }
-
-
-}
-
 
 // This method is heavily inspired by Dr. Arnold's classnotes. //
 int get_size(const char *directory_name){
@@ -168,8 +114,8 @@ int get_size(const char *directory_name){
             }      
         
          if(!get_inode( buf.st_ino )) {
-             set_inode(buf.st_ino, directory_name);
-
+            set_inode(buf.st_ino, directory_name);
+            printf("%10lld %s/\n", (long long int) buf.st_size, directory_name);
             directory first_dir = malloc(dir_struct_size);
             first_dir->name = malloc(strlen(directory_name)*sizeof(char));
             strcpy(first_dir->name, directory_name);
@@ -178,11 +124,14 @@ int get_size(const char *directory_name){
             first_dir->modification_time = buf.st_mtime;
             first_dir->inode_number = buf.st_ino;
             
-            insert_directory(first_dir);
+            insert_node(first_dir,'d');
          }
 
 
         for(de = readdir(d); de != NULL; de = readdir(d)){ //Read directory pointer and get directory entry
+            if (strcmp(de->d_name, ".") ==0 || strcmp(de->d_name, "..") ==0 ) {
+                continue;
+            }
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
             exists = stat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
@@ -192,19 +141,16 @@ int get_size(const char *directory_name){
             if(!get_inode( buf.st_ino )) {  //inode not yet seen; add to list and process            
                 set_inode(buf.st_ino, fullname);
                 if (S_ISDIR(buf.st_mode)) {
-                    if (strcmp(de->d_name, ".") !=0 && strcmp(de->d_name, "..") !=0 ) { 
-                        printf("%10lld %s/\n", (long long int) buf.st_size, fullname);
-                        directory new_dir = malloc(dir_struct_size);
-                        new_dir->name = malloc(strlen(fullname)*sizeof(char));
-                        strcpy(new_dir->name, fullname);
-                        new_dir->name_length = strlen(fullname); //This right?
-                        new_dir->mode = buf.st_mode;
-                        new_dir->modification_time = buf.st_mtime;
-                        new_dir->inode_number = buf.st_ino;
-                        insert_directory(new_dir);      
-                        total_size += get_size(fullname);        
-                    }                    
-                    
+                    printf("%10lld %s/\n", (long long int) buf.st_size, fullname);
+                    directory new_dir = malloc(dir_struct_size);
+                    new_dir->name = malloc(strlen(fullname)*sizeof(char));
+                    strcpy(new_dir->name, fullname);
+                    new_dir->name_length = strlen(fullname); //This right?
+                    new_dir->mode = buf.st_mode;
+                    new_dir->modification_time = buf.st_mtime;
+                    new_dir->inode_number = buf.st_ino;
+                    insert_node(new_dir,'d');      
+                    total_size += get_size(fullname);                           
                 } else {
                     printf("%10lld %s\n", (long long int) buf.st_size, fullname);
                     file new_file = malloc(file_struct_size);
@@ -216,7 +162,7 @@ int get_size(const char *directory_name){
                     new_file->inode_number = buf.st_ino;
                     new_file->size = buf.st_size;
                     //new_file->content = fgetc((buf);
-                    insert_file(new_file);
+                    insert_node(new_file,'f');
 
                      //Access fields in buf to print out size and name in each file
                 }
@@ -229,7 +175,7 @@ int get_size(const char *directory_name){
                 new_hlink->name_length = strlen(fullname); //This right?
                 new_hlink->inode_number = buf.st_ino;
                 //new_file->content = fgetc((buf);
-                insert_hlink(new_hlink);
+                insert_node(new_hlink,'h');
             }
             total_size += buf.st_size;
         }
@@ -256,7 +202,7 @@ int get_size(const char *directory_name){
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
             if(tarfile == NULL){
-                perror("fopen()");
+                perror("Error: fopen()");
                 exit(-1);
             } 
             
@@ -265,7 +211,7 @@ int get_size(const char *directory_name){
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
          if(elements_read != 1) {
-             perror("fread()");
+             perror("Error: fread()");
             exit(-1);
          }
 
@@ -290,12 +236,12 @@ int get_size(const char *directory_name){
             
             if(elements_read != 3) {
                    if (feof(tar)){return 0;}
-                    perror("fread()");
+                    perror("Error: fread()");
                     exit(-1);
                 }
 
             if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
-                 link(get_inode(inode_number), name);
+                link(get_inode(inode_number), name);
                 continue;
             } else { //otherwise, set inode and keep processing
                 set_inode(inode_number, name);
@@ -306,7 +252,7 @@ int get_size(const char *directory_name){
 
                if(elements_read != 5) {
                    if (feof(tar)){return 0;}
-                    perror("fread()");
+                    perror("Error: fread()");
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
@@ -316,10 +262,10 @@ int get_size(const char *directory_name){
                      new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
                      new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
                      new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
-                     insert_directory(new_dir);
+                     insert_node(new_dir,'d');
                      int result = mkdir(name,mode);
                      if(result == -1){
-                         perror("mkdir()");
+                         perror("Error: mkdir()");
                          exit(-1);
                      }
 
@@ -337,7 +283,7 @@ int get_size(const char *directory_name){
 
                     result =  utimes(name, timevalArray);
                     if(result == -1){
-                        perror("utimes()");
+                        perror("Error: utimes()");
                         exit(-1);
                     }
 
@@ -352,15 +298,15 @@ int get_size(const char *directory_name){
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
-                        perror("fread()");
+                        perror("Error: fread()");
                         exit(-1);
                     }
                     new_file->size = size;
-                    insert_file(new_file);
+                    insert_node(new_file,'f');
 
                     FILE *out_file = fopen(name, "w");
                     if(out_file == NULL) {
-                        perror("fopen()");
+                        perror("Error: fopen()");
                         exit(-1);
                     }
                     char o;
@@ -373,7 +319,7 @@ int get_size(const char *directory_name){
 
                     int result =  chmod(name, mode);
                      if(result == -1){
-                         perror("chmod()");
+                         perror("Error: chmod()");
                          exit(-1);
                      }
 
@@ -393,7 +339,7 @@ int get_size(const char *directory_name){
 
 
                     if(result == -1){
-                        perror("utimes()");
+                        perror("Error: utimes()");
                         exit(-1);
                     }
 
@@ -404,17 +350,8 @@ int get_size(const char *directory_name){
 
 
          }
-
-
-     return 0;
-
-
-   
-
-    
-
-
-    }
+    return 0;
+}
 
 
     int tar_printing(const char *tarfile){
@@ -432,7 +369,7 @@ int get_size(const char *directory_name){
 
         FILE *tar = fopen(tarfile,"r"); //We are reading from the capture.archivefile
             if(tarfile == NULL){
-                perror("fread()");
+                perror("Error: fread()");
                 exit(-1);
             } 
             
@@ -441,7 +378,7 @@ int get_size(const char *directory_name){
          //elements_read = keeps track of how many times we called fread()
          elements_read = fread(&magic, 4, 1, tar); //Copies 4 bytes from the file into magic
          if(elements_read != 1) {
-             perror("fread()");
+             perror("Error: fread()");
             exit(-1);
          }
 
@@ -466,12 +403,12 @@ int get_size(const char *directory_name){
 
               if(elements_read != 3) {
                    if (feof(tar)){return 0;}
-                    perror("fread()");
+                    perror("Error: fread()");
                     exit(-1);
                 }
 
               if(get_inode(inode_number)) {  //is this a hard link? if so, stop here          
-                 printf("%s -- inode: %llu\n", name, (long long unsigned int) inode_number);
+                 printf("%s@ -- inode: %llu\n", name, (long long unsigned int) inode_number);
                 continue;
                 } else { //otherwise, set inode and keep processing
                     set_inode(inode_number, name);
@@ -483,7 +420,7 @@ int get_size(const char *directory_name){
 
                if(elements_read != 5) {
                    if (feof(tar)){return 0;}
-                    perror("fread()");
+                    perror("Error: fread()");
                     exit(-1);
                 }
                 if (S_ISDIR(mode)) { //Mode is the only thing that tells you whether it's a file or a directory.
@@ -493,7 +430,7 @@ int get_size(const char *directory_name){
                      new_dir->mode = mode; //We have to tell hard disk the mode; it will assume the default of the current working directory plus the user who created the file (Linux stuff) otherwise
                      new_dir->modification_time = modification_time; //We have to tell hard disk the modification time; it will think the directory is new upon creation otherwise
                      new_dir->inode_number = inode_number; //Generated upon file creation. Hard disk knows this. 
-                     insert_directory(new_dir);
+                     insert_node(new_dir,'d');
 
                  printf("%s/ -- inode: %llu, mode: %o, mtime: %llu\n", name, (long long unsigned int) inode_number, mode, (long long unsigned int) modification_time);
 
@@ -511,11 +448,11 @@ int get_size(const char *directory_name){
                     
                     elements_read = fread(&size, 8, 1, tar);
                     if(elements_read != 1) {
-                        perror("fread()");
+                        perror("Error: fread()");
                         exit(-1);
                     }
                     new_file->size = size;
-                    insert_file(new_file);
+                    insert_node(new_file,'f');
 
                     fseek(tar, size, SEEK_CUR);
 
@@ -607,10 +544,7 @@ int main( int argc, char *argv[] )
                     exit(-1);
                 }
                 
-                printf("Creates an archive of the given directory tree. A directory name must be specified.\n");
-
                 capture.specified = 'c';
-                printf("%c\n", capture.specified);
 
                 //printf("Option b, converting to PBM.\n");
                 break;
@@ -623,11 +557,7 @@ int main( int argc, char *argv[] )
                     exit(-1);
                 }
 
-
-                printf("Extracts the directory tree contained in the specified archive\n");
-
                 capture.specified = 'x';
-                printf("%c\n", capture.specified);
 
                 break;
 
@@ -639,10 +569,7 @@ int main( int argc, char *argv[] )
                     exit(-1);
                 }
 
-                printf("Prints the contents of the specified archive\n");
-
                 capture.specified = 't';
-                printf("%c\n", capture.specified);
 
                 break;
 
@@ -707,61 +634,57 @@ int main( int argc, char *argv[] )
 
             FILE *tarfile = fopen(capture.archivefile, "w"); //We are writing to the archive file
             if(tarfile == NULL){
-                perror("fopen()");
+                perror("Error: fopen()");
                 exit(-1);
             } 
             uint32_t magic = MAGIC;
             fwrite(&magic, 4, 1, tarfile);
 
-    // u_int64_t inode_number;
-    // u_int32_t name_length;
-    // char *name;
-    // u_int32_t mode;
-    // u_int64_t modification_time;
-    // struct Directory *next;
-
-
-
-            directory temp = directory_head;
-            while(temp != 0){
-                fwrite(&temp->inode_number, 8, 1, tarfile);
-                fwrite(&temp->name_length, 4, 1, tarfile);
-                fwrite(temp->name, strlen(temp->name), 1, tarfile);
-                fwrite(&temp->mode, 4, 1, tarfile);
-                fwrite(&temp->modification_time, 8, 1, tarfile);
-                temp = temp->next;
-            }
-            file tmpfile = file_head;
-            char o;
-            while(tmpfile !=0){
-                fwrite(&tmpfile->inode_number, 8, 1, tarfile);
-                fwrite(&tmpfile->name_length, 4, 1, tarfile);
-                fwrite(tmpfile->name, strlen(tmpfile->name), 1, tarfile);
-                fwrite(&tmpfile->mode, 4, 1, tarfile);
-                fwrite(&tmpfile->modification_time, 8, 1, tarfile);
-                fwrite(&tmpfile->size, 8, 1, tarfile);
-                FILE *inptr = fopen(tmpfile->name,"r");
-                if(inptr == 0){
-                    perror("fread()");
+            node traversed = head;
+            while(traversed != 0){
+                directory temp;
+                file tmpfile;
+                hlink tempy;
+                switch(traversed->type_id){
+                    case 'd':
+                        temp = (directory) traversed->current;
+                        fwrite(&temp->inode_number, 8, 1, tarfile);
+                        fwrite(&temp->name_length, 4, 1, tarfile);
+                        fwrite(temp->name, strlen(temp->name), 1, tarfile);
+                        fwrite(&temp->mode, 4, 1, tarfile);
+                        fwrite(&temp->modification_time, 8, 1, tarfile);
+                        break;
+                    case 'f':
+                        tmpfile = (file) traversed->current;
+                        fwrite(&tmpfile->inode_number, 8, 1, tarfile);
+                        fwrite(&tmpfile->name_length, 4, 1, tarfile);
+                        fwrite(tmpfile->name, strlen(tmpfile->name), 1, tarfile);
+                        fwrite(&tmpfile->mode, 4, 1, tarfile);
+                        fwrite(&tmpfile->modification_time, 8, 1, tarfile);
+                        fwrite(&tmpfile->size, 8, 1, tarfile);
+                        FILE *inptr = fopen(tmpfile->name,"r");
+                        char o;
+                        if(inptr == 0){
+                            perror("Error: fread()");
+                        }
+                        while((o=fgetc(inptr))!=EOF){
+                            fputc(o,tarfile);
+                        }
+                        fclose(inptr);
+                        break;
+                    case 'h':
+                        tempy = (hlink) traversed->current;
+                        fwrite(&tempy->inode_number, 8, 1, tarfile);
+                        fwrite(&tempy->name_length, 4, 1, tarfile);
+                        fwrite(tempy->name, strlen(tempy->name), 1, tarfile);
+                        break;
+                    default:
+                        fprintf(stderr,"Error: unknown node type_id in linked list.\n");
+                        exit(-1);
                 }
-                while((o=fgetc(inptr))!=EOF){
-                    fputc(o,tarfile);
-                }
-                fclose(inptr);
-                tmpfile = tmpfile->next;
+
+                traversed = traversed->next;
             }
-
-            hlink tempy = hlink_head;
-            while(temp != 0){
-                fwrite(&tempy->inode_number, 8, 1, tarfile);
-                fwrite(&tempy->name_length, 4, 1, tarfile);
-                fwrite(tempy->name, strlen(temp->name), 1, tarfile);
-                tempy = tempy->next;
-            }
-
-
-
-
             fclose(tarfile); //at the end
             break;
         case 'x':
