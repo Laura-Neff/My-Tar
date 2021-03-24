@@ -257,7 +257,7 @@ int get_size(const char *directory_name){
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
-              if (!name){ perror("Error: malloc()"); exit(-1);}
+              if (!name){ perror("Error: malloc name()"); exit(-1);}
               elements_read += fread(name, name_length, 1, tar);
               name[name_length] = '\0';
             
@@ -312,8 +312,6 @@ int get_size(const char *directory_name){
 
                     result = utimes(name, timevalArray);
                     
-                    
-
                                  
                 } else {
                     
@@ -334,6 +332,10 @@ int get_size(const char *directory_name){
                         exit(-1);
                     }
                     char *content = malloc(size);
+                    if(!content){
+                        perror("Error: malloc()");
+                        exit(-1);
+                    }
                     fread(content,size,1,tar);
                     fwrite(content,size,1,out_file);
                     fclose(out_file);
@@ -415,6 +417,7 @@ int get_size(const char *directory_name){
               elements_read += fread(&inode_number, 8, 1, tar);
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
+              if (!name){ perror("Error: malloc() name"); exit(-1);}
               elements_read += fread(name, name_length, 1, tar);
               name[name_length] = '\0';
 
@@ -455,6 +458,7 @@ int get_size(const char *directory_name){
                     }
 
                     char *content = malloc(size);
+                    if (!content){ perror("Error: malloc()"); exit(-1);}
                     fread(content,size,1,tar);
 
                     if(mode & (S_IXUSR | S_IXGRP | S_IXOTH)){
