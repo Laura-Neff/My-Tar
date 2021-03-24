@@ -139,7 +139,16 @@ int get_size(const char *directory_name){
                 continue;
             }
             fullname = malloc(strlen(directory_name)+strlen(de->d_name)+2);
-            sprintf(fullname, "%s/%s", directory_name, de->d_name);
+            strcpy(fullname, directory_name);
+            strcpy(fullname+strlen(directory_name),"/");
+            strcpy(fullname+strlen(directory_name)+1,de->d_name);
+            int lbefore = strlen(fullname);
+            fullname[strlen(directory_name)+1+strlen(de->d_name)] = '\0';
+            int lafter = strlen(fullname);
+            if (lbefore!=lafter){
+                fprintf(stderr,"WHAAAAAA %s %d %d\n",fullname,lbefore,lafter);
+                exit(-1);
+            }
             exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
                 perror("Error: lstat()");
@@ -250,6 +259,7 @@ int get_size(const char *directory_name){
               name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
               if (!name){ perror("Error: malloc()"); exit(-1);}
               elements_read += fread(name, name_length, 1, tar);
+              name[name_length] = '\0';
             
                 if(elements_read != 3) {
                     if (feof(tar)){return 0;}
@@ -406,6 +416,7 @@ int get_size(const char *directory_name){
               elements_read += fread(&name_length, 4, 1, tar);
               name = malloc(name_length+1); //Rule: if we don't know how big a variable will be of if we need copies of it, malloc it!
               elements_read += fread(name, name_length, 1, tar);
+              name[name_length] = '\0';
 
               if(elements_read != 3) {
                    if (feof(tar)){return 0;}
