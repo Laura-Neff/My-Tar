@@ -101,11 +101,7 @@ int get_size(const char *directory_name){
 
                     //This is based on Dr. Arnold's classnotes
 
-        fullname = (char *)malloc(sizeof(char)*(strlen(directory_name)+2096));
-        if (!fullname){
-            perror("Error: malloc()");
-            exit(-1);
-        }
+        fullname = (char *)directory_name;
 
         
         exists = stat(directory_name, &buf); //Call stat on relative path and upload inode info into stat buf structure
@@ -142,6 +138,7 @@ int get_size(const char *directory_name){
             if (strcmp(de->d_name, ".") ==0 || strcmp(de->d_name, "..") ==0 ) {
                 continue;
             }
+            fullname = malloc(strlen(directory_name)+strlen(de->d_name)+2);
             sprintf(fullname, "%s/%s", directory_name, de->d_name);
             exists = lstat(fullname, &buf); //Call stat on relative path and upload inode info into stat buf structure
             if(exists < 0){
@@ -155,9 +152,7 @@ int get_size(const char *directory_name){
                     printf("%10lld %s/\n", (long long int) buf.st_size, fullname);
                     directory new_dir = malloc(dir_struct_size);
                     if (!new_dir){ perror("Error: malloc()"); exit(-1);}
-                    new_dir->name = malloc(strlen(fullname)+1);
-                    if (!new_dir->name){ perror("Error: malloc()"); exit(-1);}
-                    strcpy(new_dir->name, fullname);
+                    new_dir->name = fullname;
                     new_dir->name_length = strlen(fullname); //This right?
                     new_dir->mode = buf.st_mode;
                     new_dir->modification_time = buf.st_mtime;
@@ -168,9 +163,7 @@ int get_size(const char *directory_name){
                     printf("%10lld %s\n", (long long int) buf.st_size, fullname);
                     file new_file = malloc(file_struct_size);
                     if (!new_file){ perror("Error: malloc()"); exit(-1);}
-                    new_file->name = malloc(strlen(fullname)+1);
-                    if (!new_file->name){ perror("Error: malloc()"); exit(-1);}
-                    strcpy(new_file->name, fullname);
+                    new_file->name = fullname;
                     new_file->name_length = strlen(fullname); //This right?
                     new_file->mode = buf.st_mode;
                     new_file->modification_time = buf.st_mtime;
@@ -197,9 +190,7 @@ int get_size(const char *directory_name){
 
                 hlink new_hlink = malloc(hlink_struct_size);
                 if (!new_hlink){ perror("Error: malloc()"); exit(-1);}
-                new_hlink->name = malloc(strlen(fullname)+1);
-                if (!new_hlink->name){ perror("Error: malloc()"); exit(-1);}
-                strcpy(new_hlink->name, fullname);
+                new_hlink->name = fullname;
                 new_hlink->name_length = strlen(fullname); //This right?
                 new_hlink->inode_number = buf.st_ino;
                 //new_file->content = fgetc((buf);
